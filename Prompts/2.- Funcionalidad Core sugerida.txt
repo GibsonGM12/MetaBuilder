@@ -1,0 +1,9 @@
+Actualmente tengo un proyecto que puedes leer en @Basic.md y me surgen varias dudas, te doy un poco mas de contexto:
+
+Es un proyecto para un curso que consta de 30 horas, dudo mucho que alcance a hacer todo lo que esta dentro del archivo, quisiera que me dijeras cuales son las funcionalidades que consideras mas importantes y que me podrian alcanzar con el tiempo que tengo estimado.
+
+¿Que opinas del stack tecnologico, cambiarias a C# por Python?
+
+El proyecto lo hare con tu ayuda, y este proyecto debe de cubrir desde generar el backlog de tickets, desarrollo, pruebas y despliegue, ya sea con Github actions en azure, o en algun otro lugar para que puedan probar los profesores el resultado.
+
+Si tienes dudas sobre este proyecto hazmelas saber.
