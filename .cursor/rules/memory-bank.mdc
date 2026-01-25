@@ -1,0 +1,90 @@
+---
+description: Memory Bank principal del proyecto MetaBuilder - DEBE LEERSE SIEMPRE AL INICIO DE CADA SESIÓN
+globs: 
+alwaysApply: true
+---
+
+# 🧠 MetaBuilder - Memory Bank
+
+> **IMPORTANTE**: Este Memory Bank debe mantenerse actualizado conforme el proyecto avanza. Al completar cualquier tarea significativa, actualiza los archivos correspondientes del Memory Bank.
+
+## Propósito del Memory Bank
+
+Este sistema de memoria persistente permite mantener el contexto del proyecto MetaBuilder entre sesiones. Contiene:
+
+- Contexto y visión del proyecto
+- Stack tecnológico y decisiones arquitectónicas
+- Estado actual del desarrollo
+- Patrones y convenciones de código
+
+## Estructura del Memory Bank
+
+```
+.cursor/rules/
+├── memory-bank.mdc          # Este archivo - Índice y reglas
+├── project-context.md       # Visión y descripción del proyecto
+├── tech-stack.md            # Stack tecnológico detallado
+├── architecture.md          # Arquitectura y decisiones
+├── data-model.md            # Modelo de datos
+├── progress.md              # Estado actual del desarrollo
+├── active-context.md        # Contexto activo de trabajo
+└── patterns.md              # Patrones y convenciones
+```
+
+## 📋 Reglas de Actualización del Memory Bank
+
+### CUÁNDO ACTUALIZAR
+
+1. **Al completar un ticket de trabajo**: Actualizar `progress.md` marcando el ticket como completado
+2. **Al crear nuevos archivos/componentes**: Actualizar `active-context.md` con la nueva estructura
+3. **Al tomar decisiones técnicas**: Documentar en `architecture.md`
+4. **Al cambiar el stack**: Actualizar `tech-stack.md`
+5. **Al identificar nuevos patrones**: Agregar a `patterns.md`
+6. **Al iniciar/terminar una épica**: Actualizar `progress.md`
+
+### CÓMO ACTUALIZAR
+
+```markdown
+## Al completar una tarea significativa:
+
+1. Lee el archivo relevante del Memory Bank
+2. Actualiza la información correspondiente
+3. Agrega la fecha de última actualización
+4. Si es progreso, mueve el ticket de "Pendiente" a "Completado"
+```
+
+### FORMATO DE COMMITS RELACIONADOS
+
+Cuando hagas commits que involucren actualización del Memory Bank:
+```
+docs(memory-bank): actualizar [archivo] - [descripción breve]
+```
+
+## 🔄 Estado Rápido del Proyecto
+
+- **Fase actual**: Diseño y Documentación (Pre-implementación)
+- **Última actualización**: 24 de Enero 2026
+- **Próximo ticket a implementar**: TK-BE-001 (Estructura de carpetas backend)
+
+## 📚 Archivos de Referencia Principales
+
+| Archivo | Propósito |
+|---------|-----------|
+| `progress.md` | Ver estado actual de tickets y épicas |
+| `active-context.md` | Ver en qué se está trabajando ahora |
+| `architecture.md` | Entender decisiones arquitectónicas |
+| `patterns.md` | Patrones de código a seguir |
+
+## ⚡ Comandos Rápidos para el Agente
+
+Al iniciar una sesión de trabajo:
+```
+1. Lee .cursor/rules/progress.md para ver el estado
+2. Lee .cursor/rules/active-context.md para ver el contexto actual
+3. Identifica el siguiente ticket a trabajar
+4. Al completar, actualiza ambos archivos
+```
+
+---
+
+> **Nota**: Este Memory Bank es parte integral del flujo de desarrollo. Mantenerlo actualizado asegura continuidad entre sesiones y facilita la colaboración con el asistente de IA.

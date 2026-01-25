@@ -1,0 +1,91 @@
+---
+description: Regla para mantener actualizado el Memory Bank durante el desarrollo
+globs: 
+alwaysApply: true
+---
+
+# 🔄 Regla de Actualización del Memory Bank
+
+## IMPORTANTE: Actualización Obligatoria
+
+**Al completar cualquier tarea significativa en este proyecto, DEBES actualizar el Memory Bank.**
+
+## Checklist de Actualización
+
+### Después de completar un ticket de trabajo:
+
+1. **Actualizar `progress.md`**:
+   - Cambiar el estado del ticket de 🔴 a 🟢
+   - Agregar notas si es relevante
+   - Actualizar el conteo de progreso de la épica
+   - Agregar entrada al historial de progreso
+
+2. **Actualizar `active-context.md`**:
+   - Actualizar "Ticket actual" al siguiente pendiente
+   - Documentar decisiones tomadas
+   - Registrar problemas encontrados (si los hay)
+   - Actualizar archivos modificados
+
+### Al tomar decisiones técnicas:
+
+- **Actualizar `architecture.md`**:
+  - Agregar nuevo ADR si es una decisión significativa
+  - Documentar el contexto y las razones
+
+### Al agregar nuevas dependencias:
+
+- **Actualizar `tech-stack.md`**:
+  - Agregar la nueva dependencia con su versión
+  - Documentar el propósito
+
+### Al establecer nuevos patrones:
+
+- **Actualizar `patterns.md`**:
+  - Documentar el nuevo patrón con ejemplo de código
+  - Explicar cuándo usarlo
+
+### Al modificar el modelo de datos:
+
+- **Actualizar `data-model.md`**:
+  - Actualizar el diagrama si cambia la estructura
+  - Documentar nuevos campos o tablas
+
+## Formato de Actualización
+
+Al actualizar cualquier archivo del Memory Bank:
+
+```markdown
+> **Última actualización**: [FECHA ACTUAL]
+```
+
+## Ejemplo de Actualización de Progreso
+
+Antes:
+```markdown
+| TK-BE-001 | Crear estructura de carpetas backend | 🔴 Pendiente | |
+```
+
+Después:
+```markdown
+| TK-BE-001 | Crear estructura de carpetas backend | 🟢 Completado | Estructura creada según patrón Clean Architecture |
+```
+
+## Frecuencia de Actualización
+
+| Evento | Acción |
+|--------|--------|
+| Completar ticket | Actualizar progress.md y active-context.md |
+| Iniciar ticket | Actualizar active-context.md |
+| Decisión técnica | Actualizar architecture.md |
+| Nuevo patrón | Actualizar patterns.md |
+| Nueva dependencia | Actualizar tech-stack.md |
+| Cambio en modelo | Actualizar data-model.md |
+| Fin de sesión | Actualizar active-context.md con estado actual |
+
+## Recordatorio Final
+
+> **El Memory Bank es tu fuente de verdad entre sesiones. Mantenerlo actualizado asegura continuidad y evita repetir trabajo o perder contexto.**
+
+---
+
+Esta regla se aplica automáticamente a todas las sesiones de trabajo en este proyecto.
