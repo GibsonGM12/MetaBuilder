@@ -4,20 +4,27 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from app.core.database import Base
+from app.infrastructure.database.models import EntityFieldModel, EntityModel, UserModel  # noqa: F401
+
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.environ.get("DATABASE_URL_SYNC", "postgresql://metabuilder:metabuilder123@localhost:5432/metabuilder")
+database_url = os.environ.get(
+    "DATABASE_URL_SYNC", "postgresql://metabuilder:metabuilder123@localhost:5432/metabuilder"
+)
 config.set_main_option("sqlalchemy.url", database_url)
 
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(url=url, target_metadata=target_metadata, literal_binds=True, dialect_opts={"paramstyle": "named"})
+    context.configure(
+        url=url, target_metadata=target_metadata, literal_binds=True, dialect_opts={"paramstyle": "named"}
+    )
     with context.begin_transaction():
         context.run_migrations()
 
