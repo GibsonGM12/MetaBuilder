@@ -6,9 +6,11 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.auth_service import AuthService
+from app.application.services.crud_service import DynamicCrudService
 from app.application.services.metadata_service import MetadataService
 from app.core.config import settings
 from app.core.database import get_db
+from app.infrastructure.database.repositories.dynamic_data_repository import DynamicDataRepository
 from app.infrastructure.database.repositories.metadata_repository import MetadataRepository
 from app.infrastructure.database.table_manager import TableManager
 
@@ -39,6 +41,10 @@ async def get_current_user(
         return {"user_id": UUID(user_id), "role": role}
     except JWTError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido o expirado")
+
+
+async def get_crud_service(db: AsyncSession = Depends(get_db)) -> DynamicCrudService:
+    return DynamicCrudService(MetadataRepository(db), DynamicDataRepository(db))
 
 
 async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:

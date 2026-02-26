@@ -1,6 +1,6 @@
 # 📊 MetaBuilder - Modelo de Datos
 
-> **Última actualización**: 24 de Enero 2026
+> **Última actualización**: 26 de Febrero 2026
 
 ## Diagrama de Entidades
 
@@ -104,14 +104,14 @@
 
 ## Tablas Dinámicas
 
-### Patrón: `entity_{entity_id}`
+### Patrón: `entity_{uuid_sin_guiones}`
 
-Cada entidad genera una tabla con este formato:
+Cada entidad genera una tabla con este formato (UUID sin guiones):
 
 ```sql
-CREATE TABLE entity_550e8400-e29b-41d4-a716-446655440000 (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    created_at TIMESTAMP DEFAULT NOW(),
+CREATE TABLE "entity_550e8400e29b41d4a716446655440000" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     -- Columnas dinámicas según entity_fields
     nombre VARCHAR(100),
     precio DECIMAL(18,6),

@@ -5,6 +5,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { EntityDetail } from "./pages/EntityDetail";
 import { EntityManagement } from "./pages/EntityManagement";
+import { EntityRecords } from "./pages/EntityRecords";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 
@@ -38,6 +39,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/records"
+        element={
+          <ProtectedRoute>
+            <EntityRecords />
           </ProtectedRoute>
         }
       />

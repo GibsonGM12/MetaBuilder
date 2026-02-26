@@ -1,46 +1,74 @@
 # 🛠️ MetaBuilder - Stack Tecnológico
 
-> **Última actualización**: 24 de Enero 2026
+> **Última actualización**: 26 de Febrero 2026
 
 ## Backend
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
 | Python | 3.12 | Lenguaje principal |
-| FastAPI | latest | Framework web REST |
-| SQLAlchemy | latest | ORM para metadatos + Core para queries dinámicas |
-| Alembic | latest | Migraciones de base de datos |
-| Pydantic | latest | Validación de datos y DTOs |
-| PyJWT | latest | Manejo de tokens JWT |
-| Passlib | latest | Hash de contraseñas (bcrypt) |
-| Uvicorn | latest | Servidor ASGI |
+| FastAPI | >=0.115.0 | Framework web REST |
+| SQLAlchemy | >=2.0.0 (asyncio) | ORM para metadatos + Core para queries dinámicas |
+| asyncpg | >=0.30.0 | Driver PostgreSQL async |
+| psycopg2-binary | >=2.9.0 | Driver PostgreSQL sync (Alembic) |
+| Alembic | >=1.14.0 | Migraciones de base de datos |
+| Pydantic | >=2.0.0 | Validación de datos y DTOs |
+| python-jose | >=3.3.0 | Manejo de tokens JWT (jose) |
+| bcrypt | (via passlib) | Hash de contraseñas (uso directo de bcrypt) |
+| Uvicorn | >=0.34.0 | Servidor ASGI |
+| pytest / pytest-asyncio | >=8.0.0 / >=0.24.0 | Testing |
+| ruff | >=0.9.0 | Linter |
 
-### Estructura Backend Propuesta
+### Estructura Backend Actual
 ```
 backend/
 ├── app/
 │   ├── api/
-│   │   └── routers/
-│   │       ├── auth.py
-│   │       ├── metadata.py
-│   │       └── crud.py
+│   │   ├── routers/
+│   │   │   ├── auth.py
+│   │   │   ├── health.py
+│   │   │   ├── metadata.py
+│   │   │   └── crud.py
+│   │   ├── middleware/
+│   │   │   └── error_handler.py
+│   │   └── deps.py
+│   ├── application/
+│   │   ├── dto/
+│   │   │   ├── auth_dto.py
+│   │   │   ├── metadata_dto.py
+│   │   │   └── crud_dto.py
+│   │   └── services/
+│   │       ├── auth_service.py
+│   │       ├── metadata_service.py
+│   │       ├── crud_service.py
+│   │       └── data_validator.py
 │   ├── core/
 │   │   ├── config.py
-│   │   └── security.py
+│   │   └── database.py
 │   ├── domain/
-│   │   └── entities/
-│   ├── services/
-│   │   ├── auth_service.py
-│   │   ├── metadata_service.py
-│   │   └── crud_service.py
+│   │   ├── entities.py
+│   │   └── interfaces.py
 │   ├── infrastructure/
-│   │   ├── database.py
-│   │   ├── repositories/
-│   │   └── table_manager.py
+│   │   └── database/
+│   │       ├── models.py
+│   │       ├── repositories/
+│   │       │   ├── metadata_repository.py
+│   │       │   └── dynamic_data_repository.py
+│   │       └── table_manager.py
 │   └── main.py
 ├── alembic/
 ├── tests/
+│   ├── conftest.py
+│   ├── test_auth.py
+│   ├── test_health.py
+│   ├── test_metadata.py
+│   ├── test_crud.py
+│   ├── test_metadata_service_unit.py
+│   ├── test_crud_service_unit.py
+│   ├── test_data_validator_unit.py
+│   └── test_table_manager_unit.py
 ├── requirements.txt
+├── pyproject.toml
 └── Dockerfile
 ```
 
@@ -48,35 +76,49 @@ backend/
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| React | 18 | Framework UI |
-| TypeScript | latest | Tipado estático |
-| Vite | latest | Build tool y dev server |
-| TailwindCSS | latest | Framework de estilos |
-| Axios | latest | Cliente HTTP |
-| React Router | v6 | Routing SPA |
+| React | ^18.3.1 | Framework UI |
+| TypeScript | ~5.6.0 | Tipado estático |
+| Vite | ^6.0.0 | Build tool y dev server |
+| TailwindCSS | ^3.4.0 | Framework de estilos |
+| Axios | ^1.7.9 | Cliente HTTP |
+| React Router | ^6.28.0 | Routing SPA |
+| TanStack React Query | ^5.62.0 | Data fetching y cache |
 
-### Estructura Frontend Propuesta
+### Estructura Frontend Actual
 ```
 frontend/
 ├── src/
 │   ├── components/
 │   │   ├── common/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── Modal.tsx
 │   │   ├── layout/
-│   │   ├── entities/
+│   │   │   └── Layout.tsx
+│   │   ├── admin/
+│   │   │   ├── EntityBuilder.tsx
+│   │   │   └── FieldManager.tsx
 │   │   └── crud/
+│   │       ├── DynamicList.tsx
+│   │       └── DynamicForm.tsx
 │   ├── contexts/
 │   │   └── AuthContext.tsx
 │   ├── hooks/
 │   │   ├── useAuth.ts
-│   │   └── useDynamicEntity.ts
+│   │   ├── useMetadata.ts
+│   │   └── useCrud.ts
 │   ├── pages/
 │   │   ├── Login.tsx
-│   │   ├── Entities.tsx
-│   │   └── DynamicCrud.tsx
+│   │   ├── Home.tsx
+│   │   ├── EntityManagement.tsx
+│   │   ├── EntityDetail.tsx
+│   │   └── EntityRecords.tsx
 │   ├── services/
 │   │   ├── api.ts
-│   │   └── crud.service.ts
+│   │   ├── metadataService.ts
+│   │   └── crudService.ts
 │   ├── types/
+│   │   └── index.ts
 │   └── App.tsx
 ├── package.json
 └── vite.config.ts
@@ -109,39 +151,45 @@ services:
     ports: 8000:8000
   frontend:
     build: ./frontend
-    ports: 3000:3000
+    ports: 5173:5173
 ```
 
-## Dependencias Clave por Instalar
+## Dependencias Instaladas
 
 ### Backend (requirements.txt)
 ```
-fastapi>=0.100.0
-uvicorn[standard]>=0.22.0
-sqlalchemy>=2.0.0
-alembic>=1.11.0
-psycopg2-binary>=2.9.6
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+sqlalchemy[asyncio]>=2.0.0
+asyncpg>=0.30.0
+psycopg2-binary>=2.9.0
+alembic>=1.14.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
-python-multipart>=0.0.6
+python-multipart>=0.0.18
+httpx>=0.28.0
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+ruff>=0.9.0
 ```
 
 ### Frontend (package.json)
 ```json
 {
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.0.0",
-    "axios": "^1.4.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "axios": "^1.7.9",
+    "@tanstack/react-query": "^5.62.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "vite": "^4.0.0",
-    "tailwindcss": "^3.3.0",
-    "@types/react": "^18.2.0"
+    "typescript": "~5.6.0",
+    "vite": "^6.0.0",
+    "tailwindcss": "^3.4.0",
+    "@types/react": "^18.3.12"
   }
 }
 ```
@@ -159,7 +207,7 @@ DEBUG=true
 
 ### Frontend (.env)
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:8000
 ```
 
 ---

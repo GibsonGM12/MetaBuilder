@@ -1,6 +1,6 @@
 # 🏗️ MetaBuilder - Arquitectura y Decisiones
 
-> **Última actualización**: 24 de Enero 2026
+> **Última actualización**: 26 de Febrero 2026
 
 ## Arquitectura General
 
@@ -86,19 +86,20 @@ MetaBuilder utiliza una **Arquitectura en Capas (Clean Architecture)** con 4 cap
 
 **Código típico**:
 ```python
-# ORM para metadatos
-session.query(Entity).filter(Entity.id == id).first()
+# ORM para metadatos (async)
+stmt = select(EntityModel).where(EntityModel.id == id).options(selectinload(EntityModel.fields))
+result = await session.execute(stmt)
 
-# Core para datos dinámicos
-table = Table(f"entity_{entity_id}", metadata, autoload_with=engine)
-select(table).where(table.c.id == record_id)
+# Core para datos dinámicos (text queries)
+sql = text(f'SELECT * FROM "{table_name}" WHERE id = :id')
+result = await session.execute(sql, {"id": record_id})
 ```
 
 ---
 
 ### ADR-003: JWT Simple sin Keycloak
 
-**Decisión**: Usar **JWT simple con PyJWT** en lugar de Keycloak para el MVP
+**Decisión**: Usar **JWT simple con python-jose** en lugar de Keycloak para el MVP
 
 **Contexto**:
 - Keycloak es robusto pero complejo de configurar
@@ -148,6 +149,21 @@ select(table).where(table.c.id == record_id)
 
 ---
 
+### ADR-007: bcrypt directo en lugar de passlib.CryptContext
+
+**Decisión**: Usar **bcrypt.hashpw/checkpw directamente** en lugar de passlib.context.CryptContext
+
+**Contexto**:
+- passlib.CryptContext tenía conflictos de compatibilidad con la librería bcrypt
+- Error: `ValueError: password cannot be longer than 72 bytes`
+
+**Razones**:
+- ✅ Elimina capa de abstracción innecesaria
+- ✅ Resuelve incompatibilidad entre passlib y bcrypt
+- ✅ API simple: `bcrypt.hashpw()` y `bcrypt.checkpw()`
+
+---
+
 ### ADR-006: Validación en Dos Capas
 
 **Decisión**: Validar en **frontend** y **backend**
@@ -188,12 +204,13 @@ select(table).where(table.c.id == record_id)
 ### Flujo: CRUD Dinámico
 
 ```
-1. User → POST /api/crud/{entity_id}/records {campo1: valor1, campo2: valor2}
-2. DynamicCrudService obtiene metadatos de la entidad
-3. DataValidator valida valores contra definición de campos
-4. QueryBuilder construye INSERT dinámico
-5. DynamicDataRepository ejecuta query
-6. Respuesta: Registro creado
+1. User → POST /api/entities/{entity_id}/records {"data": {campo1: valor1, campo2: valor2}}
+2. DynamicCrudService obtiene metadatos de la entidad (MetadataRepository)
+3. DataValidator valida valores contra definición de campos (tipos, requeridos, max_length)
+4. DataValidator convierte tipos (fechas str→date, mapea field.name→column_name)
+5. DynamicDataRepository ejecuta INSERT con text() sobre tabla entity_{uuid}
+6. _build_response serializa Decimal→float, date→ISO string
+7. Respuesta: RecordResponse {id, created_at, data}
 ```
 
 ---

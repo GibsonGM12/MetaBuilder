@@ -55,6 +55,20 @@ export interface FieldCreate {
 
 export type FieldType = "TEXT" | "NUMBER" | "INTEGER" | "DATE" | "BOOLEAN";
 
+export interface DynamicRecord {
+  id: string;
+  created_at: string;
+  data: Record<string, unknown>;
+}
+
+export interface PaginatedRecords {
+  items: DynamicRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 export interface ApiError {
   error: {
     code: string;
