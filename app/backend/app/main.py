@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.middleware.error_handler import ErrorHandlerMiddleware
+from app.api.middleware.error_handler import general_exception_handler, http_exception_handler
+from app.api.routers.auth import router as auth_router
 from app.api.routers.health import router as health_router
+from app.api.routers.metadata import router as metadata_router
 from app.core.config import settings
 
 
@@ -20,7 +22,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(ErrorHandlerMiddleware)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://frontend:5173"],
@@ -30,3 +34,5 @@ app.add_middleware(
 )
 
 app.include_router(health_router)
+app.include_router(auth_router)
+app.include_router(metadata_router)

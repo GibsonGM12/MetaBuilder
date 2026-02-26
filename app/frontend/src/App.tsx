@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
+import { EntityDetail } from "./pages/EntityDetail";
+import { EntityManagement } from "./pages/EntityManagement";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 
@@ -36,6 +38,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/entities"
+        element={
+          <ProtectedRoute>
+            <EntityManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/entities/:id"
+        element={
+          <ProtectedRoute>
+            <EntityDetail />
           </ProtectedRoute>
         }
       />
