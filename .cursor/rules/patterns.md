@@ -1,6 +1,6 @@
 # 📐 MetaBuilder - Patrones y Convenciones
 
-> **Última actualización**: 24 de Enero 2026
+> **Última actualización**: 26 de Febrero 2026
 
 ## Convenciones de Nomenclatura
 
@@ -43,209 +43,170 @@
 
 ## Patrones de Código
 
-### Backend - Estructura de Router
+### Backend - Estructura de Router (patrón real)
 
 ```python
-# app/api/routers/entities.py
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.services.metadata_service import MetadataService
-from app.api.deps import get_current_user, get_metadata_service
-from app.schemas.entity import EntityCreate, EntityResponse
+# app/api/routers/crud.py
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.deps import get_current_user
+from app.application.dto.crud_dto import PaginatedResponse, RecordCreate, RecordResponse
+from app.application.services.crud_service import DynamicCrudService
+from app.core.database import get_db
+from app.infrastructure.database.repositories.dynamic_data_repository import DynamicDataRepository
+from app.infrastructure.database.repositories.metadata_repository import MetadataRepository
 
-router = APIRouter(prefix="/entities", tags=["entities"])
+router = APIRouter(prefix="/api/entities", tags=["records"])
 
-@router.post("/", response_model=EntityResponse, status_code=status.HTTP_201_CREATED)
-async def create_entity(
-    entity_data: EntityCreate,
-    service: MetadataService = Depends(get_metadata_service),
-    current_user = Depends(get_current_user)
+async def _get_crud_service(db: AsyncSession = Depends(get_db)) -> DynamicCrudService:
+    return DynamicCrudService(MetadataRepository(db), DynamicDataRepository(db))
+
+@router.post("/{entity_id}/records", response_model=RecordResponse, status_code=201)
+async def create_record(
+    entity_id: UUID,
+    payload: RecordCreate,
+    service: DynamicCrudService = Depends(_get_crud_service),
+    _user: dict = Depends(get_current_user),
 ):
-    """Crear una nueva entidad."""
-    return await service.create_entity(entity_data)
+    return await service.create_record(entity_id, payload)
 ```
 
-### Backend - Estructura de Service
+### Backend - Estructura de Service (patrón real)
 
 ```python
-# app/services/metadata_service.py
-from app.infrastructure.repositories.metadata_repository import MetadataRepository
-from app.infrastructure.table_manager import TableManager
-from app.schemas.entity import EntityCreate, EntityResponse
+# app/application/services/crud_service.py
+class DynamicCrudService:
+    def __init__(self, meta_repo: MetadataRepository, data_repo: DynamicDataRepository):
+        self._meta = meta_repo
+        self._data = data_repo
 
-class MetadataService:
-    def __init__(self, repository: MetadataRepository, table_manager: TableManager):
-        self._repository = repository
-        self._table_manager = table_manager
-    
-    async def create_entity(self, data: EntityCreate) -> EntityResponse:
-        # 1. Validar
-        # 2. Crear en repositorio
-        # 3. Crear tabla dinámica
-        # 4. Retornar respuesta
-        pass
+    async def create_record(self, entity_id: uuid.UUID, payload: RecordCreate) -> RecordResponse:
+        entity = await self._get_entity_or_404(entity_id)
+        cleaned = validate_record(entity.fields, payload.data)
+        result = await self._data.insert_record(entity.table_name, cleaned)
+        full_row = await self._data.get_record(entity.table_name, result["id"])
+        return self._build_response(full_row, entity.fields)
 ```
 
-### Backend - Estructura de Repository
+### Backend - Estructura de Repository (patrón real - async)
 
 ```python
-# app/infrastructure/repositories/metadata_repository.py
-from sqlalchemy.orm import Session
-from app.infrastructure.models import EntityModel
-from typing import Optional, List
-from uuid import UUID
+# app/infrastructure/database/repositories/metadata_repository.py
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 class MetadataRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self._session = session
-    
-    def create(self, entity: EntityModel) -> EntityModel:
+
+    async def create_entity(self, entity: EntityModel) -> EntityModel:
         self._session.add(entity)
-        self._session.commit()
-        self._session.refresh(entity)
+        await self._session.flush()
+        await self._session.refresh(entity)
         return entity
-    
-    def get_by_id(self, id: UUID) -> Optional[EntityModel]:
-        return self._session.query(EntityModel).filter(EntityModel.id == id).first()
-    
-    def get_all(self) -> List[EntityModel]:
-        return self._session.query(EntityModel).all()
+
+    async def get_entity_by_id(self, entity_id: UUID) -> EntityModel | None:
+        stmt = (
+            select(EntityModel)
+            .where(EntityModel.id == entity_id)
+            .options(selectinload(EntityModel.fields))
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
 ```
 
-### Backend - Estructura de DTO/Schema
+### Backend - Estructura de DTO/Schema (patrón real - Pydantic v2)
 
 ```python
-# app/schemas/entity.py
+# app/application/dto/metadata_dto.py
 from pydantic import BaseModel, Field
 from uuid import UUID
 from datetime import datetime
-from typing import Optional
 
-class EntityBase(BaseModel):
+class EntityCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     display_name: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = None
+    description: str | None = None
 
-class EntityCreate(EntityBase):
-    pass
-
-class EntityUpdate(BaseModel):
-    display_name: Optional[str] = None
-    description: Optional[str] = None
-
-class EntityResponse(EntityBase):
+class EntityResponse(BaseModel):
     id: UUID
+    name: str
+    display_name: str
+    description: str | None
     table_name: str
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
+    fields: list[FieldResponse] = []
+
+    model_config = {"from_attributes": True}
 ```
 
 ---
 
-### Frontend - Estructura de Componente
+### Frontend - Estructura de Componente (patrón real con React Query)
 
 ```tsx
-// src/components/entities/EntityList.tsx
-import { useState, useEffect } from 'react';
-import { Entity } from '../../types/entity';
-import { entityService } from '../../services/entityService';
+// src/pages/EntityRecords.tsx - usa hooks de React Query
+import { useEntities, useEntity } from "../hooks/useMetadata";
+import { useRecords, useCreateRecord } from "../hooks/useCrud";
 
-interface EntityListProps {
-  onSelect?: (entity: Entity) => void;
+export function EntityRecords() {
+  const [selectedEntityId, setSelectedEntityId] = useState<string>("");
+  const { data: entities } = useEntities();
+  const { data: entity } = useEntity(selectedEntityId || undefined);
+  const { data: recordsData } = useRecords(selectedEntityId || undefined, page, pageSize);
+
+  const createMutation = useCreateRecord(selectedEntityId);
+  const handleCreate = async (data: Record<string, unknown>) => {
+    await createMutation.mutateAsync(data);
+  };
+  // ...
+}
+```
+
+### Frontend - Estructura de Service (patrón real)
+
+```tsx
+// src/services/crudService.ts
+import { api } from "./api";
+import type { DynamicRecord, PaginatedRecords } from "../types";
+
+export const crudService = {
+  getRecords: async (entityId: string, page: number = 1, pageSize: number = 20): Promise<PaginatedRecords> => {
+    const response = await api.get(`/api/entities/${entityId}/records?page=${page}&page_size=${pageSize}`);
+    return response.data;
+  },
+  createRecord: async (entityId: string, data: Record<string, unknown>): Promise<DynamicRecord> => {
+    const response = await api.post(`/api/entities/${entityId}/records`, { data });
+    return response.data;
+  },
+};
+```
+
+### Frontend - Estructura de Hook con React Query (patrón real)
+
+```tsx
+// src/hooks/useCrud.ts
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { crudService } from "../services/crudService";
+
+export function useRecords(entityId: string | undefined, page: number = 1, pageSize: number = 20) {
+  return useQuery({
+    queryKey: ["records", entityId, page, pageSize],
+    queryFn: () => crudService.getRecords(entityId!, page, pageSize),
+    enabled: !!entityId,
+  });
 }
 
-export const EntityList = ({ onSelect }: EntityListProps) => {
-  const [entities, setEntities] = useState<Entity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadEntities();
-  }, []);
-
-  const loadEntities = async () => {
-    try {
-      setLoading(true);
-      const data = await entityService.getAll();
-      setEntities(data);
-    } catch (err) {
-      setError('Error al cargar entidades');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <div>Cargando...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
-
-  return (
-    <div className="space-y-2">
-      {entities.map((entity) => (
-        <div
-          key={entity.id}
-          onClick={() => onSelect?.(entity)}
-          className="p-4 border rounded hover:bg-gray-50 cursor-pointer"
-        >
-          <h3 className="font-medium">{entity.display_name}</h3>
-          <p className="text-sm text-gray-500">{entity.description}</p>
-        </div>
-      ))}
-    </div>
-  );
-};
-```
-
-### Frontend - Estructura de Service
-
-```tsx
-// src/services/entityService.ts
-import { api } from './api';
-import { Entity, EntityCreate } from '../types/entity';
-
-export const entityService = {
-  getAll: async (): Promise<Entity[]> => {
-    const response = await api.get('/entities');
-    return response.data;
-  },
-
-  getById: async (id: string): Promise<Entity> => {
-    const response = await api.get(`/entities/${id}`);
-    return response.data;
-  },
-
-  create: async (data: EntityCreate): Promise<Entity> => {
-    const response = await api.post('/entities', data);
-    return response.data;
-  },
-
-  update: async (id: string, data: Partial<Entity>): Promise<Entity> => {
-    const response = await api.put(`/entities/${id}`, data);
-    return response.data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await api.delete(`/entities/${id}`);
-  },
-};
-```
-
-### Frontend - Estructura de Hook Personalizado
-
-```tsx
-// src/hooks/useAuth.ts
-import { useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  
-  if (!context) {
-    throw new Error('useAuth debe usarse dentro de AuthProvider');
-  }
-  
-  return context;
-};
+export function useCreateRecord(entityId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) => crudService.createRecord(entityId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["records", entityId] });
+    },
+  });
+}
 ```
 
 ---
@@ -291,28 +252,58 @@ try {
 
 ## Patrones de Testing
 
-### Backend - Unit Test
+### Backend - Unit Test (patrón real - async con mocks)
 
 ```python
-# tests/test_metadata_service.py
+# tests/test_crud_service_unit.py
+import uuid
+from unittest.mock import AsyncMock, MagicMock
 import pytest
-from unittest.mock import Mock
-from app.services.metadata_service import MetadataService
+from app.application.services.crud_service import DynamicCrudService
+from app.application.dto.crud_dto import RecordCreate
 
-def test_create_entity_success():
-    mock_repo = Mock()
-    mock_table_manager = Mock()
-    service = MetadataService(mock_repo, mock_table_manager)
-    
-    # Arrange
-    entity_data = EntityCreate(name="productos", display_name="Productos")
-    
-    # Act
-    result = service.create_entity(entity_data)
-    
-    # Assert
-    mock_repo.create.assert_called_once()
-    mock_table_manager.create_table.assert_called_once()
+class TestCreateRecord:
+    @pytest.mark.asyncio
+    async def test_create_record_success(self):
+        field = MagicMock(spec=EntityFieldModel)
+        field.name = "nombre"
+        field.column_name = "nombre"
+        field.field_type = "TEXT"
+        field.is_required = False
+
+        entity = MagicMock(spec=EntityModel)
+        entity.id = uuid.uuid4()
+        entity.table_name = f"entity_{entity.id.hex}"
+        entity.fields = [field]
+
+        meta_repo = AsyncMock()
+        meta_repo.get_entity_by_id.return_value = entity
+        data_repo = AsyncMock()
+        data_repo.insert_record.return_value = {"id": uuid.uuid4(), "created_at": "..."}
+        data_repo.get_record.return_value = {"id": ..., "created_at": "...", "nombre": "Juan"}
+
+        service = DynamicCrudService(meta_repo, data_repo)
+        result = await service.create_record(entity.id, RecordCreate(data={"nombre": "Juan"}))
+        assert result.data["nombre"] == "Juan"
+```
+
+### Backend - Integration Test (patrón real - httpx AsyncClient)
+
+```python
+# tests/test_crud.py
+@pytest.fixture
+async def entity_with_fields(client: AsyncClient, admin_headers: dict) -> dict:
+    resp = await client.post("/api/metadata/entities", json={...}, headers=admin_headers)
+    entity_id = resp.json()["id"]
+    await client.post(f"/api/metadata/entities/{entity_id}/fields", json={...}, headers=admin_headers)
+    return resp.json()
+
+class TestCreateRecord:
+    @pytest.mark.asyncio
+    async def test_create_record_success(self, client, admin_headers, entity_with_fields):
+        entity_id = entity_with_fields["id"]
+        resp = await client.post(f"/api/entities/{entity_id}/records", json={"data": {...}}, headers=admin_headers)
+        assert resp.status_code == 201
 ```
 
 ---

@@ -2,423 +2,423 @@
 
 Este documento contiene ejemplos de código para las diferentes partes del sistema.
 
-## Backend - C#
+## Backend - Python (FastAPI + SQLAlchemy)
 
-### 1. DynamicQueryBuilder - Construcción de Queries SQL Dinámicas
+### 1. DynamicQueryBuilder - Construcción de Queries con SQLAlchemy Core
 
-```csharp
-using System.Text;
-using System.Collections.Generic;
+```python
+from uuid import UUID
+from typing import Any, Optional
 
-namespace LowCodePlatform.Domain.QueryBuilders
-{
-    public class DynamicQueryBuilder
-    {
-        public class QueryResult
-        {
-            public string Sql { get; set; }
-            public Dictionary<string, object> Parameters { get; set; }
-        }
+from sqlalchemy import Table, MetaData, select, insert, update, delete, func, asc, desc
+from sqlalchemy.engine import Engine
 
-        public QueryResult BuildInsertQuery(EntityDefinition entity, Dictionary<string, object> data)
-        {
-            var sql = new StringBuilder();
-            var parameters = new Dictionary<string, object>();
-            var columns = new List<string>();
-            var values = new List<string>();
 
-            sql.Append($"INSERT INTO {entity.TableName} (");
+class DynamicQueryBuilder:
+    """Construye queries dinámicas usando SQLAlchemy Core sobre tablas entity_{uuid}."""
 
-            foreach (var field in entity.Fields.Where(f => !f.IsComputed))
-            {
-                if (data.ContainsKey(field.Name) || field.DefaultValue != null)
-                {
-                    columns.Add(field.ColumnName);
-                    var paramName = $"@{field.Name}";
-                    values.Add(paramName);
-                    
-                    if (data.ContainsKey(field.Name))
-                    {
-                        parameters[field.Name] = data[field.Name];
-                    }
-                    else if (field.DefaultValue != null)
-                    {
-                        parameters[field.Name] = field.DefaultValue;
-                    }
-                }
-            }
+    def __init__(self, engine: Engine):
+        self._engine = engine
+        self._metadata = MetaData()
 
-            sql.Append(string.Join(", ", columns));
-            sql.Append(") VALUES (");
-            sql.Append(string.Join(", ", values));
-            sql.Append(") RETURNING id;");
+    def _get_table(self, entity_id: UUID) -> Table:
+        table_name = f"entity_{entity_id}"
+        return Table(table_name, self._metadata, autoload_with=self._engine)
 
-            return new QueryResult
-            {
-                Sql = sql.ToString(),
-                Parameters = parameters
-            };
-        }
+    def build_insert(
+        self,
+        entity_id: UUID,
+        data: dict[str, Any],
+    ) -> tuple:
+        table = self._get_table(entity_id)
+        stmt = insert(table).values(**data).returning(table.c.id)
+        return stmt
 
-        public QueryResult BuildSelectQuery(
-            EntityDefinition entity,
-            string recordId = null,
-            Dictionary<string, object> filters = null,
-            string sortBy = null,
-            string sortDirection = "ASC",
-            int? page = null,
-            int? pageSize = null)
-        {
-            var sql = new StringBuilder();
-            var parameters = new Dictionary<string, object>();
+    def build_select(
+        self,
+        entity_id: UUID,
+        record_id: Optional[UUID] = None,
+        filters: Optional[dict[str, Any]] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: str = "asc",
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
+    ):
+        table = self._get_table(entity_id)
+        stmt = select(table)
 
-            sql.Append("SELECT ed.id, ed.created_at, ed.updated_at, ed.version, ");
+        if record_id is not None:
+            stmt = stmt.where(table.c.id == record_id)
 
-            var fieldColumns = entity.Fields
-                .Select(f => $"{entity.TableName}.{f.ColumnName}")
-                .ToList();
+        if filters:
+            for col_name, value in filters.items():
+                if hasattr(table.c, col_name):
+                    stmt = stmt.where(table.c[col_name] == value)
 
-            sql.Append(string.Join(", ", fieldColumns));
-            sql.Append($" FROM {entity.TableName} ");
-            sql.Append("INNER JOIN entity_data ed ON ed.id = ").Append($"{entity.TableName}.id ");
-            sql.Append("WHERE ed.entity_id = @entityId AND ed.deleted_at IS NULL ");
+        if sort_by and hasattr(table.c, sort_by):
+            order_fn = desc if sort_direction.lower() == "desc" else asc
+            stmt = stmt.order_by(order_fn(table.c[sort_by]))
 
-            parameters["entityId"] = entity.Id;
+        if page is not None and page_size is not None:
+            offset = (page - 1) * page_size
+            stmt = stmt.limit(page_size).offset(offset)
 
-            if (!string.IsNullOrEmpty(recordId))
-            {
-                sql.Append("AND ed.id = @recordId ");
-                parameters["recordId"] = recordId;
-            }
+        return stmt
 
-            if (filters != null && filters.Any())
-            {
-                foreach (var filter in filters)
-                {
-                    var field = entity.Fields.FirstOrDefault(f => f.Name == filter.Key);
-                    if (field != null)
-                    {
-                        sql.Append($"AND {entity.TableName}.{field.ColumnName} = @{field.Name} ");
-                        parameters[field.Name] = filter.Value;
-                    }
-                }
-            }
+    def build_count(
+        self,
+        entity_id: UUID,
+        filters: Optional[dict[str, Any]] = None,
+    ):
+        table = self._get_table(entity_id)
+        stmt = select(func.count()).select_from(table)
 
-            if (!string.IsNullOrEmpty(sortBy))
-            {
-                var sortField = entity.Fields.FirstOrDefault(f => f.Name == sortBy);
-                if (sortField != null)
-                {
-                    sql.Append($"ORDER BY {entity.TableName}.{sortField.ColumnName} {sortDirection} ");
-                }
-            }
+        if filters:
+            for col_name, value in filters.items():
+                if hasattr(table.c, col_name):
+                    stmt = stmt.where(table.c[col_name] == value)
 
-            if (page.HasValue && pageSize.HasValue)
-            {
-                sql.Append($"LIMIT @pageSize OFFSET @offset ");
-                parameters["pageSize"] = pageSize.Value;
-                parameters["offset"] = (page.Value - 1) * pageSize.Value;
-            }
+        return stmt
 
-            return new QueryResult
-            {
-                Sql = sql.ToString(),
-                Parameters = parameters
-            };
-        }
+    def build_update(
+        self,
+        entity_id: UUID,
+        record_id: UUID,
+        data: dict[str, Any],
+    ):
+        table = self._get_table(entity_id)
+        stmt = (
+            update(table)
+            .where(table.c.id == record_id)
+            .values(**data, updated_at=func.now())
+        )
+        return stmt
 
-        public QueryResult BuildUpdateQuery(
-            EntityDefinition entity,
-            string recordId,
-            Dictionary<string, object> data)
-        {
-            var sql = new StringBuilder();
-            var parameters = new Dictionary<string, object>();
-
-            sql.Append($"UPDATE {entity.TableName} SET ");
-
-            var setClauses = new List<string>();
-            foreach (var field in entity.Fields.Where(f => !f.IsComputed && data.ContainsKey(f.Name)))
-            {
-                setClauses.Add($"{field.ColumnName} = @{field.Name}");
-                parameters[field.Name] = data[field.Name];
-            }
-
-            sql.Append(string.Join(", ", setClauses));
-            sql.Append(" WHERE id = @recordId;");
-
-            parameters["recordId"] = recordId;
-
-            return new QueryResult
-            {
-                Sql = sql.ToString(),
-                Parameters = parameters
-            };
-        }
-    }
-}
+    def build_delete(self, entity_id: UUID, record_id: UUID):
+        table = self._get_table(entity_id)
+        stmt = delete(table).where(table.c.id == record_id)
+        return stmt
 ```
 
 ### 2. DynamicCrudService - Servicio de CRUD Genérico
 
-```csharp
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using LowCodePlatform.Domain.Entities;
-using LowCodePlatform.Domain.QueryBuilders;
-using LowCodePlatform.Infrastructure.Data;
+```python
+import math
+from uuid import UUID
+from typing import Any, Optional
 
-namespace LowCodePlatform.Application.Services
-{
-    public class DynamicCrudService
-    {
-        private readonly IMetadataRepository _metadataRepository;
-        private readonly IDynamicDataRepository _dataRepository;
-        private readonly DynamicQueryBuilder _queryBuilder;
-        private readonly DataValidator _validator;
-        private readonly IAuditService _auditService;
+from sqlalchemy.ext.asyncio import AsyncSession
 
-        public DynamicCrudService(
-            IMetadataRepository metadataRepository,
-            IDynamicDataRepository dataRepository,
-            DynamicQueryBuilder queryBuilder,
-            DataValidator validator,
-            IAuditService auditService)
-        {
-            _metadataRepository = metadataRepository;
-            _dataRepository = dataRepository;
-            _queryBuilder = queryBuilder;
-            _validator = validator;
-            _auditService = auditService;
-        }
+from app.domain.entities.metadata import Entity, EntityField
+from app.infrastructure.repositories.metadata_repository import MetadataRepository
+from app.services.query_builder import DynamicQueryBuilder
 
-        public async Task<Dictionary<string, object>> CreateRecordAsync(
-            Guid entityId,
-            Dictionary<string, object> data,
-            Guid userId)
-        {
-            // Obtener metadatos de la entidad
-            var entity = await _metadataRepository.GetEntityByIdAsync(entityId);
-            if (entity == null)
-                throw new EntityNotFoundException($"Entity {entityId} not found");
 
-            // Validar datos
-            await _validator.ValidateAsync(entity, data);
+class RecordNotFoundError(Exception):
+    pass
 
-            // Construir query de inserción
-            var query = _queryBuilder.BuildInsertQuery(entity, data);
 
-            // Ejecutar inserción
-            var recordId = await _dataRepository.ExecuteInsertAsync(query);
+class EntityNotFoundError(Exception):
+    pass
 
-            // Registrar en entity_data
-            await _dataRepository.CreateEntityDataRecordAsync(entityId, recordId, userId);
 
-            // Crear versión inicial
-            await _dataRepository.CreateVersionAsync(recordId, entityId, data, userId);
+class ValidationError(Exception):
+    def __init__(self, errors: dict[str, str]):
+        self.errors = errors
+        super().__init__(str(errors))
 
-            // Registrar auditoría
-            await _auditService.LogCreateAsync(userId, entityId, recordId, data);
 
-            // Obtener registro completo
-            return await GetRecordByIdAsync(entityId, recordId);
-        }
+class PagedResult:
+    def __init__(
+        self,
+        data: list[dict[str, Any]],
+        page: int,
+        page_size: int,
+        total_records: int,
+    ):
+        self.data = data
+        self.page = page
+        self.page_size = page_size
+        self.total_records = total_records
+        self.total_pages = math.ceil(total_records / page_size) if page_size > 0 else 0
 
-        public async Task<Dictionary<string, object>> GetRecordByIdAsync(
-            Guid entityId,
-            Guid recordId)
-        {
-            var entity = await _metadataRepository.GetEntityByIdAsync(entityId);
-            if (entity == null)
-                throw new EntityNotFoundException($"Entity {entityId} not found");
 
-            var query = _queryBuilder.BuildSelectQuery(entity, recordId.ToString());
-            var result = await _dataRepository.ExecuteSelectAsync(query);
+class DynamicCrudService:
+    def __init__(
+        self,
+        session: AsyncSession,
+        metadata_repo: MetadataRepository,
+        query_builder: DynamicQueryBuilder,
+    ):
+        self._session = session
+        self._metadata_repo = metadata_repo
+        self._qb = query_builder
 
-            return result.FirstOrDefault() ?? throw new RecordNotFoundException($"Record {recordId} not found");
-        }
+    async def _get_entity_or_raise(self, entity_id: UUID) -> Entity:
+        entity = await self._metadata_repo.get_entity_by_id(entity_id)
+        if entity is None:
+            raise EntityNotFoundError(f"Entity {entity_id} not found")
+        return entity
 
-        public async Task<PagedResult<Dictionary<string, object>>> GetRecordsAsync(
-            Guid entityId,
-            Dictionary<string, object> filters = null,
-            string sortBy = null,
-            string sortDirection = "ASC",
-            int page = 1,
-            int pageSize = 20)
-        {
-            var entity = await _metadataRepository.GetEntityByIdAsync(entityId);
-            if (entity == null)
-                throw new EntityNotFoundException($"Entity {entityId} not found");
+    def _validate_data(
+        self,
+        fields: list[EntityField],
+        data: dict[str, Any],
+        is_update: bool = False,
+    ) -> None:
+        errors: dict[str, str] = {}
+        field_map = {f.name: f for f in fields}
 
-            var query = _queryBuilder.BuildSelectQuery(
-                entity,
-                filters: filters,
-                sortBy: sortBy,
-                sortDirection: sortDirection,
-                page: page,
-                pageSize: pageSize);
+        if not is_update:
+            for field in fields:
+                if field.is_required and field.name not in data:
+                    errors[field.name] = f"{field.display_name} es requerido"
 
-            var records = await _dataRepository.ExecuteSelectAsync(query);
-            var totalCount = await _dataRepository.GetRecordCountAsync(entityId, filters);
+        for key, value in data.items():
+            field = field_map.get(key)
+            if field is None:
+                errors[key] = f"Campo '{key}' no existe en la entidad"
+                continue
+            if field.max_length and isinstance(value, str) and len(value) > field.max_length:
+                errors[key] = f"Máximo {field.max_length} caracteres"
 
-            return new PagedResult<Dictionary<string, object>>
-            {
-                Data = records,
-                Page = page,
-                PageSize = pageSize,
-                TotalRecords = totalCount,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-            };
-        }
+        if errors:
+            raise ValidationError(errors)
 
-        public async Task<Dictionary<string, object>> UpdateRecordAsync(
-            Guid entityId,
-            Guid recordId,
-            Dictionary<string, object> data,
-            Guid userId)
-        {
-            var entity = await _metadataRepository.GetEntityByIdAsync(entityId);
-            if (entity == null)
-                throw new EntityNotFoundException($"Entity {entityId} not found");
+    async def create_record(
+        self,
+        entity_id: UUID,
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        entity = await self._get_entity_or_raise(entity_id)
+        self._validate_data(entity.fields, data)
 
-            // Obtener registro actual para auditoría
-            var currentRecord = await GetRecordByIdAsync(entityId, recordId);
-            var oldValues = new Dictionary<string, object>(currentRecord);
+        stmt = self._qb.build_insert(entity_id, data)
+        result = await self._session.execute(stmt)
+        await self._session.commit()
 
-            // Validar datos
-            await _validator.ValidateAsync(entity, data, isUpdate: true);
+        record_id = result.scalar_one()
+        return await self.get_record_by_id(entity_id, record_id)
 
-            // Construir query de actualización
-            var query = _queryBuilder.BuildUpdateQuery(entity, recordId.ToString(), data);
+    async def get_record_by_id(
+        self,
+        entity_id: UUID,
+        record_id: UUID,
+    ) -> dict[str, Any]:
+        await self._get_entity_or_raise(entity_id)
 
-            // Ejecutar actualización
-            await _dataRepository.ExecuteUpdateAsync(query);
+        stmt = self._qb.build_select(entity_id, record_id=record_id)
+        result = await self._session.execute(stmt)
+        row = result.mappings().first()
 
-            // Actualizar entity_data
-            await _dataRepository.UpdateEntityDataRecordAsync(recordId, userId);
+        if row is None:
+            raise RecordNotFoundError(f"Record {record_id} not found")
 
-            // Crear nueva versión
-            var newRecord = await GetRecordByIdAsync(entityId, recordId);
-            await _dataRepository.CreateVersionAsync(recordId, entityId, newRecord, userId);
+        return dict(row)
 
-            // Registrar auditoría
-            await _auditService.LogUpdateAsync(userId, entityId, recordId, oldValues, data);
+    async def get_records(
+        self,
+        entity_id: UUID,
+        filters: Optional[dict[str, Any]] = None,
+        sort_by: Optional[str] = None,
+        sort_direction: str = "asc",
+        page: int = 1,
+        page_size: int = 20,
+    ) -> PagedResult:
+        await self._get_entity_or_raise(entity_id)
 
-            return newRecord;
-        }
+        stmt = self._qb.build_select(
+            entity_id,
+            filters=filters,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
+            page=page,
+            page_size=page_size,
+        )
+        result = await self._session.execute(stmt)
+        records = [dict(row) for row in result.mappings().all()]
 
-        public async Task DeleteRecordAsync(
-            Guid entityId,
-            Guid recordId,
-            Guid userId)
-        {
-            var entity = await _metadataRepository.GetEntityByIdAsync(entityId);
-            if (entity == null)
-                throw new EntityNotFoundException($"Entity {entityId} not found");
+        count_stmt = self._qb.build_count(entity_id, filters=filters)
+        total = (await self._session.execute(count_stmt)).scalar_one()
 
-            // Obtener registro para auditoría
-            var record = await GetRecordByIdAsync(entityId, recordId);
+        return PagedResult(
+            data=records,
+            page=page,
+            page_size=page_size,
+            total_records=total,
+        )
 
-            // Soft delete
-            await _dataRepository.SoftDeleteRecordAsync(recordId, userId);
+    async def update_record(
+        self,
+        entity_id: UUID,
+        record_id: UUID,
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        entity = await self._get_entity_or_raise(entity_id)
+        await self.get_record_by_id(entity_id, record_id)
 
-            // Registrar auditoría
-            await _auditService.LogDeleteAsync(userId, entityId, recordId, record);
-        }
-    }
-}
+        self._validate_data(entity.fields, data, is_update=True)
+
+        stmt = self._qb.build_update(entity_id, record_id, data)
+        await self._session.execute(stmt)
+        await self._session.commit()
+
+        return await self.get_record_by_id(entity_id, record_id)
+
+    async def delete_record(
+        self,
+        entity_id: UUID,
+        record_id: UUID,
+    ) -> None:
+        await self._get_entity_or_raise(entity_id)
+        await self.get_record_by_id(entity_id, record_id)
+
+        stmt = self._qb.build_delete(entity_id, record_id)
+        await self._session.execute(stmt)
+        await self._session.commit()
 ```
 
 ### 3. MetadataService - Gestión de Metadatos
 
-```csharp
-using System;
-using System.Threading.Tasks;
-using LowCodePlatform.Domain.Entities;
-using LowCodePlatform.Infrastructure.Data;
+```python
+from uuid import UUID, uuid4
+from typing import Optional
 
-namespace LowCodePlatform.Application.Services
-{
-    public class MetadataService
-    {
-        private readonly IMetadataRepository _metadataRepository;
-        private readonly IDynamicDataRepository _dataRepository;
+from sqlalchemy import text, Column, String, Integer, Float, Boolean, Date, Text
+from sqlalchemy import Table as SaTable, MetaData as SaMetadata
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 
-        public MetadataService(
-            IMetadataRepository metadataRepository,
-            IDynamicDataRepository dataRepository)
-        {
-            _metadataRepository = metadataRepository;
-            _dataRepository = dataRepository;
-        }
+from app.domain.entities.metadata import Entity, EntityField
+from app.infrastructure.repositories.metadata_repository import MetadataRepository
 
-        public async Task<EntityDefinition> CreateEntityAsync(
-            EntityDefinition entityDefinition,
-            Guid userId)
-        {
-            // Validar nombre único
-            var existing = await _metadataRepository.GetEntityByNameAsync(entityDefinition.Name);
-            if (existing != null)
-                throw new InvalidOperationException($"Entity with name '{entityDefinition.Name}' already exists");
 
-            // Generar nombre de tabla
-            entityDefinition.TableName = $"entity_{Guid.NewGuid():N}";
-
-            // Crear entidad en base de datos
-            var entity = await _metadataRepository.CreateEntityAsync(entityDefinition, userId);
-
-            // Crear tabla física
-            await _dataRepository.CreateEntityTableAsync(entity);
-
-            return entity;
-        }
-
-        public async Task<EntityField> AddFieldToEntityAsync(
-            Guid entityId,
-            EntityField field,
-            Guid userId)
-        {
-            var entity = await _metadataRepository.GetEntityByIdAsync(entityId);
-            if (entity == null)
-                throw new EntityNotFoundException($"Entity {entityId} not found");
-
-            // Validar nombre único en la entidad
-            var existingField = entity.Fields.FirstOrDefault(f => f.Name == field.Name);
-            if (existingField != null)
-                throw new InvalidOperationException($"Field '{field.Name}' already exists in entity");
-
-            // Generar nombre de columna
-            field.ColumnName = field.ColumnName ?? $"col_{field.Name}";
-
-            // Agregar campo a la entidad
-            var createdField = await _metadataRepository.AddFieldAsync(entityId, field, userId);
-
-            // Agregar columna a la tabla física
-            await _dataRepository.AddColumnToEntityTableAsync(entity, createdField);
-
-            return createdField;
-        }
-
-        public async Task<EntityRelation> CreateRelationAsync(
-            Guid sourceEntityId,
-            Guid targetEntityId,
-            EntityRelation relation,
-            Guid userId)
-        {
-            var sourceEntity = await _metadataRepository.GetEntityByIdAsync(sourceEntityId);
-            var targetEntity = await _metadataRepository.GetEntityByIdAsync(targetEntityId);
-
-            if (sourceEntity == null || targetEntity == null)
-                throw new EntityNotFoundException("Source or target entity not found");
-
-            relation.SourceEntityId = sourceEntityId;
-            relation.TargetEntityId = targetEntityId;
-
-            return await _metadataRepository.CreateRelationAsync(relation, userId);
-        }
-    }
+FIELD_TYPE_MAP = {
+    "TEXT": String(255),
+    "NUMBER": Float,
+    "INTEGER": Integer,
+    "DATE": Date,
+    "BOOLEAN": Boolean,
 }
+
+
+class MetadataService:
+    def __init__(
+        self,
+        session: AsyncSession,
+        engine: AsyncEngine,
+        metadata_repo: MetadataRepository,
+    ):
+        self._session = session
+        self._engine = engine
+        self._metadata_repo = metadata_repo
+
+    async def create_entity(
+        self,
+        name: str,
+        display_name: str,
+        description: Optional[str] = None,
+    ) -> Entity:
+        existing = await self._metadata_repo.get_entity_by_name(name)
+        if existing is not None:
+            raise ValueError(f"Entity with name '{name}' already exists")
+
+        entity_id = uuid4()
+        table_name = f"entity_{entity_id}"
+
+        entity = await self._metadata_repo.create_entity(
+            id=entity_id,
+            name=name,
+            display_name=display_name,
+            description=description,
+            table_name=table_name,
+        )
+
+        await self._create_physical_table(table_name)
+        return entity
+
+    async def _create_physical_table(self, table_name: str) -> None:
+        ddl = text(f"""
+            CREATE TABLE {table_name} (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+        """)
+        async with self._engine.begin() as conn:
+            await conn.execute(ddl)
+
+    async def add_field_to_entity(
+        self,
+        entity_id: UUID,
+        name: str,
+        display_name: str,
+        field_type: str,
+        is_required: bool = False,
+        max_length: Optional[int] = None,
+    ) -> EntityField:
+        entity = await self._metadata_repo.get_entity_by_id(entity_id)
+        if entity is None:
+            raise ValueError(f"Entity {entity_id} not found")
+
+        existing_field = next((f for f in entity.fields if f.name == name), None)
+        if existing_field is not None:
+            raise ValueError(f"Field '{name}' already exists in entity")
+
+        field = await self._metadata_repo.add_field(
+            entity_id=entity_id,
+            name=name,
+            display_name=display_name,
+            field_type=field_type,
+            is_required=is_required,
+            max_length=max_length,
+        )
+
+        await self._add_physical_column(
+            table_name=entity.table_name,
+            column_name=name,
+            field_type=field_type,
+            is_required=is_required,
+            max_length=max_length,
+        )
+
+        return field
+
+    async def _add_physical_column(
+        self,
+        table_name: str,
+        column_name: str,
+        field_type: str,
+        is_required: bool,
+        max_length: Optional[int],
+    ) -> None:
+        pg_type = self._resolve_pg_type(field_type, max_length)
+        nullable = "" if not is_required else " NOT NULL"
+
+        ddl = text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {pg_type}{nullable}")
+        async with self._engine.begin() as conn:
+            await conn.execute(ddl)
+
+    @staticmethod
+    def _resolve_pg_type(field_type: str, max_length: Optional[int] = None) -> str:
+        mapping = {
+            "TEXT": f"VARCHAR({max_length})" if max_length else "TEXT",
+            "NUMBER": "DOUBLE PRECISION",
+            "INTEGER": "INTEGER",
+            "DATE": "DATE",
+            "BOOLEAN": "BOOLEAN",
+        }
+        return mapping.get(field_type, "TEXT")
+
+    async def delete_entity(self, entity_id: UUID) -> None:
+        entity = await self._metadata_repo.get_entity_by_id(entity_id)
+        if entity is None:
+            raise ValueError(f"Entity {entity_id} not found")
+
+        ddl = text(f"DROP TABLE IF EXISTS {entity.table_name}")
+        async with self._engine.begin() as conn:
+            await conn.execute(ddl)
+
+        await self._metadata_repo.delete_entity(entity_id)
 ```
 
 ## Frontend - React + TypeScript
@@ -497,7 +497,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       [fieldName]: value
     }));
 
-    // Validar en tiempo real
     if (metadata) {
       const field = metadata.fields.find(f => f.name === fieldName);
       if (field) {
@@ -515,7 +514,6 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
     if (!metadata) return;
 
-    // Validar todos los campos
     const validationErrors = FormValidator.validateForm(metadata, formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -599,11 +597,9 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
   const renderInput = () => {
     switch (field.fieldType) {
       case 'TEXT':
-      case 'EMAIL':
-      case 'URL':
         return (
           <input
-            type={field.fieldType === 'EMAIL' ? 'email' : field.fieldType === 'URL' ? 'url' : 'text'}
+            type="text"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             maxLength={field.maxLength}
@@ -615,11 +611,16 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
         );
 
       case 'NUMBER':
+      case 'INTEGER':
         return (
           <input
             type="number"
             value={value || ''}
-            onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+            onChange={(e) => onChange(
+              field.fieldType === 'INTEGER'
+                ? parseInt(e.target.value, 10) || 0
+                : parseFloat(e.target.value) || 0
+            )}
             required={field.isRequired}
             className={`w-full px-3 py-2 border rounded-md ${
               error ? 'border-red-500' : 'border-gray-300'
@@ -647,20 +648,6 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
             checked={value || false}
             onChange={(e) => onChange(e.target.checked)}
             className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-          />
-        );
-
-      case 'TEXTAREA':
-        return (
-          <textarea
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            maxLength={field.maxLength}
-            required={field.isRequired}
-            rows={4}
-            className={`w-full px-3 py-2 border rounded-md ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
           />
         );
 
@@ -696,11 +683,10 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
 };
 ```
 
-### 7. Servicio API - Cliente HTTP Genérico
+### 7. Servicio API - Cliente HTTP con JWT
 
 ```typescript
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { keycloakService } from './auth/keycloakService';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -713,10 +699,9 @@ class ApiClient {
       }
     });
 
-    // Interceptor para agregar token
     this.client.interceptors.request.use(
-      async (config) => {
-        const token = await keycloakService.getToken();
+      (config) => {
+        const token = localStorage.getItem('access_token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -725,15 +710,12 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Interceptor para manejar errores
     this.client.interceptors.response.use(
       (response) => response,
-      async (error) => {
+      (error) => {
         if (error.response?.status === 401) {
-          // Token expirado, intentar refrescar
-          await keycloakService.refreshToken();
-          // Reintentar request
-          return this.client.request(error.config);
+          localStorage.removeItem('access_token');
+          window.location.href = '/login';
         }
         return Promise.reject(error);
       }
@@ -761,7 +743,7 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api');
+export const apiClient = new ApiClient(import.meta.env.VITE_API_URL || 'http://localhost:8000/api');
 ```
 
 ### 8. Validador de Formularios
@@ -787,31 +769,17 @@ export class FormValidator {
   }
 
   static validateField(field: EntityField, value: any): string | null {
-    // Campo requerido
     if (field.isRequired && (value === null || value === undefined || value === '')) {
       return `${field.displayName} es requerido`;
     }
 
-    // Si el campo está vacío y no es requerido, no validar más
     if (!field.isRequired && (value === null || value === undefined || value === '')) {
       return null;
     }
 
-    // Validación por tipo
     switch (field.fieldType) {
-      case 'EMAIL':
-        if (!this.isValidEmail(value)) {
-          return 'Formato de email inválido';
-        }
-        break;
-
-      case 'URL':
-        if (!this.isValidUrl(value)) {
-          return 'Formato de URL inválido';
-        }
-        break;
-
       case 'NUMBER':
+      case 'INTEGER':
         if (isNaN(value)) {
           return 'Debe ser un número válido';
         }
@@ -824,59 +792,9 @@ export class FormValidator {
         break;
     }
 
-    // Validaciones personalizadas
-    if (field.validations) {
-      for (const validation of field.validations) {
-        const error = this.validateRule(validation, value);
-        if (error) {
-          return error;
-        }
-      }
-    }
-
     return null;
-  }
-
-  private static validateRule(validation: any, value: any): string | null {
-    switch (validation.validationType) {
-      case 'REGEX':
-        const regex = new RegExp(validation.validationRule);
-        if (!regex.test(value)) {
-          return validation.errorMessage || 'Valor no válido';
-        }
-        break;
-
-      case 'MIN':
-        if (parseFloat(value) < parseFloat(validation.validationRule)) {
-          return validation.errorMessage || `Valor mínimo: ${validation.validationRule}`;
-        }
-        break;
-
-      case 'MAX':
-        if (parseFloat(value) > parseFloat(validation.validationRule)) {
-          return validation.errorMessage || `Valor máximo: ${validation.validationRule}`;
-        }
-        break;
-    }
-
-    return null;
-  }
-
-  private static isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  private static isValidUrl(url: string): boolean {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
   }
 }
 ```
 
 Estos ejemplos proporcionan una base sólida para implementar el sistema. Ajusta según las necesidades específicas del proyecto.
-
