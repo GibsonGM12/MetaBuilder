@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Entity, EntityCreate, EntityField, FieldCreate } from "../types";
+import type { Entity, EntityCreate, EntityField, EntityRelationship, FieldCreate, LookupItem } from "../types";
 
 export const metadataService = {
   getEntities: async (): Promise<Entity[]> => {
@@ -33,5 +33,17 @@ export const metadataService = {
 
   deleteField: async (entityId: string, fieldId: string): Promise<void> => {
     await api.delete(`/api/metadata/entities/${entityId}/fields/${fieldId}`);
+  },
+
+  getRelationships: async (entityId: string): Promise<EntityRelationship[]> => {
+    const response = await api.get(`/api/metadata/entities/${entityId}/relationships`);
+    return response.data;
+  },
+
+  lookup: async (entityId: string, search: string = "", limit: number = 20): Promise<LookupItem[]> => {
+    const response = await api.get(`/api/metadata/entities/${entityId}/lookup`, {
+      params: { search, limit },
+    });
+    return response.data;
   },
 };

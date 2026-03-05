@@ -1,6 +1,6 @@
 # 🎯 MetaBuilder - Contexto Activo
 
-> **Última actualización**: 26 de Febrero 2026
+> **Última actualización**: 1 de Marzo 2026
 
 ## Estado Actual de la Sesión
 
@@ -8,25 +8,55 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Épica activa** | ÉPICA 07 - Deploy y Documentación |
-| **Ticket actual** | TK-INFRA-004 - Configurar deploy en Railway |
+| **Épica activa** | Ninguna (todas completadas) |
+| **Ticket actual** | Listo para Deploy / Integración |
 | **Archivos modificados** | Ver sección "Archivos Creados/Modificados" |
 | **Bloqueadores** | Ninguno |
 
-### Sesión Completada - CRUD Dinámico
+### Estado: LOS 3 BLOQUES PRINCIPALES COMPLETADOS
 
-Se completaron las Épicas 04 (Motor CRUD Dinámico Backend) y 06 (Frontend CRUD Dinámico):
+- **Dashboard Builder (EP-08)**: ✅ Completado
+- **Relaciones entre Entidades (EP-09)**: ✅ Completado
+- **Form Builder (EP-10)**: ✅ Completado
 
-- **Backend**: DTOs, DynamicDataRepository (SQLAlchemy Core), DataValidator, DynamicCrudService, CrudRouter (5 endpoints REST)
-- **Frontend**: crudService.ts, useCrud.ts hooks, DynamicList, DynamicForm, EntityRecords page
-- **Navegación**: Item "Datos" en sidebar para todos los usuarios, ruta /records
-- **Tests**: 74 tests pasando (39 nuevos para CRUD dinámico)
+**Último completado**: EP-10 Form Builder. Proyecto listo para pruebas de integración y deploy.
+
+### Sesión Completada - Form Builder (EP-10)
+
+Se completó la Épica 10 (Form Builder):
+
+- **Backend**: Modelos ORM (forms, form_sections, form_section_fields), migración Alembic, DTOs Pydantic, FormRepository, FormService (CRUD), FormSubmissionService (multi-entidad transaccional), Forms Router con 7 endpoints
+- **Frontend**: Section components (FIELDS, LOOKUP, DETAIL_TABLE, CALCULATED), Form Designer, Form Renderer, páginas y navegación
+
+### Sesión Completada - Relaciones entre Entidades (EP-09)
+
+Se completó la Épica 09 (Relaciones entre Entidades):
+
+- **Backend**: EntityRelationshipModel, migración entity_relationships, MetadataService con campo RELATION, endpoint lookup (`/api/metadata/entities/{id}/lookup?search=term`), RelationshipRepository
+- **Frontend**: RelationLookup component integrado en DynamicForm, FieldManager con tipo RELATION
+
+### Sesión Completada - Dashboard Builder (EP-08)
+
+Se completó la Épica 08 (Dashboard Builder):
+
+- **Backend**: DashboardModel, DashboardWidgetModel, migración Alembic, DTOs, DashboardRepository, DashboardService, WidgetDataService, DynamicDataRepository extendido (aggregate, group_by, get_recent), Dashboard Router (10 endpoints)
+- **Frontend**: 7 tipos de widgets (KpiCard, StatCard, BarChart, LineChart, PieChart, DataGrid, RecentList), WidgetRenderer, WidgetSkeleton, WidgetError, DashboardList, DashboardView, DashboardDesigner con react-grid-layout, DesignerToolbar, WidgetPalette, WidgetConfigPanel
+- **Documentación**: User stories, wireframes, mockups
+
+### Sesión Completada - Documentación EP-10 Form Builder
+
+Se creó la documentación completa de EP-10 (Form Builder):
+
+- **README.md**: Resumen épica, 10 historias (US-060 a US-069), estimación 18-22h
+- **US-060 a US-069**: Historias detalladas con formato estándar (Información General, Gherkin, Notas)
+- **forms-user-flows.md**: Flow 1 (Admin diseña), Flow 2 (User llena y envía), diagrama de navegación
+- **forms-wireframes.md**: Form Designer, Section Config, Form Renderer, Lista de formularios
 
 ### Próxima Tarea
 
-**Ticket**: TK-INFRA-004 - Configurar deploy en Railway
+**Ticket**: TK-INFRA-004 (Deploy) o TK-DBA-005 (Seeds)
 
-**Descripción**: Configurar el despliegue de la aplicación en Railway o similar.
+**Descripción**: Proyecto listo para pruebas de integración y deploy. Todos los bloques principales implementados.
 
 ---
 
@@ -40,6 +70,10 @@ Se completaron las Épicas 04 (Motor CRUD Dinámico Backend) y 06 (Frontend CRUD
 - **SQLAlchemy Core para CRUD dinámico**: DynamicDataRepository usa `text()` para DML sobre tablas dinámicas (INSERT, SELECT, UPDATE, DELETE)
 - **Conversión de tipos en validator**: Fechas se convierten a `datetime.date` antes de insertar; Decimals se convierten a float en las respuestas
 - **CRUD accesible para todos**: Los endpoints de registros requieren `get_current_user` (no solo admin)
+- **react-grid-layout**: Layout de dashboards con drag & drop para posicionar widgets
+- **recharts**: Librería para gráficos (bar, pie, line) en widgets
+- **lucide-react**: Iconos para la UI del Dashboard Designer
+- **JSON config pattern**: Widgets configurados mediante JSON (position, config) en lugar de vistas hard-coded
 
 ### Problemas Encontrados y Resueltos
 
@@ -114,6 +148,53 @@ Se completaron las Épicas 04 (Motor CRUD Dinámico Backend) y 06 (Frontend CRUD
 - `app/frontend/src/components/crud/DynamicList.tsx` - Tabla dinámica
 - `app/frontend/src/components/crud/DynamicForm.tsx` - Formulario dinámico
 - `app/frontend/src/pages/EntityRecords.tsx` - Página principal de registros
+
+### Backend - Dashboard Builder (nuevo)
+- `app/backend/app/infrastructure/database/models.py` - DashboardModel, DashboardWidgetModel
+- `app/backend/alembic/versions/a2b3c4d5e6f7_add_dashboards_and_widgets.py` - Migración
+- `app/backend/app/application/dto/dashboard_dto.py` - DTOs Pydantic
+- `app/backend/app/infrastructure/database/repositories/dashboard_repository.py` - Repository CRUD
+- `app/backend/app/application/services/dashboard_service.py` - DashboardService
+- `app/backend/app/application/services/widget_data_service.py` - WidgetDataService (agregaciones)
+- `app/backend/app/infrastructure/database/repositories/dynamic_data_repository.py` - Extendido (aggregate, group_by, get_recent)
+- `app/backend/app/api/routers/dashboard.py` - 10 endpoints REST
+
+### Backend - Relaciones entre Entidades (EP-09)
+- `app/backend/app/infrastructure/database/repositories/relationship_repository.py` - RelationshipRepository
+- `app/backend/alembic/versions/b3c4d5e6f7a8_add_entity_relationships.py` - Migración entity_relationships
+
+### Frontend - Relaciones entre Entidades (EP-09)
+- `app/frontend/src/components/crud/RelationLookup.tsx` - Componente autocomplete para campos RELATION
+
+### Frontend - Dashboard Builder (nuevo)
+- `app/frontend/src/services/dashboardService.ts` - Servicio API
+- `app/frontend/src/hooks/useDashboard.ts` - Hooks React Query
+- `app/frontend/src/components/dashboard/widgets/` - WidgetRenderer, KpiCard, StatCard, BarChartWidget, LineChartWidget, PieChartWidget, DataGridWidget, RecentListWidget, WidgetSkeleton, WidgetError
+- `app/frontend/src/components/dashboard/designer/` - DashboardDesigner, DesignerToolbar, WidgetPalette, WidgetConfigPanel
+- `app/frontend/src/pages/DashboardList.tsx`, `DashboardView.tsx`, `DashboardDesignerList.tsx`, `DashboardDesignerPage.tsx`
+
+### Documentation - Dashboard
+- `documentation/2-descripcion-producto/dashboard-mockups.md`, `dashboard-user-flows.md`, `dashboard-wireframes.md`
+- `documentation/6-historias-usuario/EP-08-Dashboard-Builder/` - US-042 a US-053
+
+### Backend - Form Builder (EP-10)
+- `app/backend/app/infrastructure/database/models.py` - FormModel, FormSectionModel, FormSectionFieldModel
+- `app/backend/alembic/versions/c4d5e6f7a8b9_add_forms_tables.py` - Migración forms
+- `app/backend/app/application/dto/form_dto.py` - DTOs Pydantic
+- `app/backend/app/infrastructure/database/repositories/form_repository.py` - FormRepository
+- `app/backend/app/application/services/form_service.py` - FormService (CRUD)
+- `app/backend/app/application/services/form_submission_service.py` - FormSubmissionService (multi-entidad transaccional)
+- `app/backend/app/api/routers/forms.py` - 7 endpoints REST
+
+### Frontend - Form Builder (EP-10)
+- `app/frontend/src/services/formService.ts` - Servicio API forms
+- `app/frontend/src/hooks/useForm.ts` - Hooks React Query
+- `app/frontend/src/components/crud/DynamicForm.tsx` - Extendido para RelationLookup
+- Páginas y componentes de Form Designer / Form Renderer
+
+### Documentation - Form Builder (EP-10)
+- `documentation/2-descripcion-producto/forms-user-flows.md`, `forms-wireframes.md`
+- `documentation/6-historias-usuario/EP-10-Form-Builder/` - README, US-060 a US-069
 
 ### Infraestructura
 - `app/docker-compose.yml`
@@ -193,7 +274,7 @@ npm run dev
 ## Checklist de Inicio de Sesión
 
 - [ ] Leer `progress.md` para ver estado actual
-- [ ] Identificar ticket a trabajar (TK-INFRA-004)
+- [ ] Identificar ticket a trabajar (TK-INFRA-004 Deploy o TK-DBA-005 Seeds)
 - [ ] Revisar documentación del ticket en `documentation/7-tickets-trabajo/`
 - [ ] Implementar ticket
 - [ ] Actualizar `progress.md` al completar

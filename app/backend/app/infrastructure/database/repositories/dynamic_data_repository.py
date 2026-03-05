@@ -71,3 +71,75 @@ class DynamicDataRepository:
     @staticmethod
     def calc_total_pages(total: int, page_size: int) -> int:
         return max(1, math.ceil(total / page_size))
+
+    async def aggregate(
+        self, table_name: str, aggregation: str, field: str | None = None
+    ) -> Any:
+        agg_map = {
+            "count": "COUNT(*)",
+            "sum": f'SUM("{field}")' if field else "COUNT(*)",
+            "avg": f'AVG("{field}")' if field else "COUNT(*)",
+        }
+        agg_expr = agg_map.get(aggregation, "COUNT(*)")
+        sql = text(f'SELECT {agg_expr} AS result FROM "{table_name}"')
+        result = await self._session.execute(sql)
+        value = result.scalar_one_or_none()
+        return value if value is not None else 0
+
+    async def group_by(
+        self,
+        table_name: str,
+        group_field: str,
+        aggregation: str,
+        agg_field: str | None = None,
+    ) -> list[dict[str, Any]]:
+        agg_map = {
+            "count": "COUNT(*)",
+            "sum": f'SUM("{agg_field}")' if agg_field else "COUNT(*)",
+            "avg": f'AVG("{agg_field}")' if agg_field else "COUNT(*)",
+        }
+        agg_expr = agg_map.get(aggregation, "COUNT(*)")
+        sql = text(
+            f'SELECT "{group_field}" AS label, {agg_expr} AS value '
+            f'FROM "{table_name}" '
+            f'GROUP BY "{group_field}" '
+            f"ORDER BY value DESC"
+        )
+        result = await self._session.execute(sql)
+        return [dict(row) for row in result.mappings().all()]
+
+    async def group_by_date(
+        self,
+        table_name: str,
+        date_field: str,
+        aggregation: str,
+        agg_field: str | None = None,
+        interval: str = "month",
+    ) -> list[dict[str, Any]]:
+        agg_map = {
+            "count": "COUNT(*)",
+            "sum": f'SUM("{agg_field}")' if agg_field else "COUNT(*)",
+            "avg": f'AVG("{agg_field}")' if agg_field else "COUNT(*)",
+        }
+        agg_expr = agg_map.get(aggregation, "COUNT(*)")
+        sql = text(
+            f"SELECT DATE_TRUNC(:interval, \"{date_field}\") AS label, {agg_expr} AS value "
+            f'FROM "{table_name}" '
+            f"GROUP BY label ORDER BY label ASC"
+        )
+        result = await self._session.execute(sql, {"interval": interval})
+        return [dict(row) for row in result.mappings().all()]
+
+    async def get_recent(
+        self, table_name: str, fields: list[str] | None = None, limit: int = 5
+    ) -> list[dict[str, Any]]:
+        if fields:
+            cols = ", ".join(f'"{f}"' for f in fields)
+            cols = f'id, {cols}, created_at'
+        else:
+            cols = "*"
+        sql = text(
+            f'SELECT {cols} FROM "{table_name}" ORDER BY created_at DESC LIMIT :limit'
+        )
+        result = await self._session.execute(sql, {"limit": limit})
+        return [dict(row) for row in result.mappings().all()]

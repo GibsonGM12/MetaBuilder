@@ -56,3 +56,20 @@ export function useDeleteField(entityId: string) {
     },
   });
 }
+
+export function useLookup(entityId: string | undefined, search: string) {
+  return useQuery({
+    queryKey: ["lookup", entityId, search],
+    queryFn: () => metadataService.lookup(entityId!, search),
+    enabled: !!entityId,
+    staleTime: 30_000,
+  });
+}
+
+export function useEntityRelationships(entityId: string | undefined) {
+  return useQuery({
+    queryKey: ["relationships", entityId],
+    queryFn: () => metadataService.getRelationships(entityId!),
+    enabled: !!entityId,
+  });
+}

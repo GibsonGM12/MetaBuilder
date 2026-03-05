@@ -7,6 +7,7 @@ FIELD_TYPE_MAP = {
     "INTEGER": "INTEGER",
     "DATE": "DATE",
     "BOOLEAN": "BOOLEAN",
+    "RELATION": "UUID",
 }
 
 

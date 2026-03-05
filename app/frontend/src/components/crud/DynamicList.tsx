@@ -13,6 +13,11 @@ function formatValue(value: unknown, fieldType: string): string {
   if (fieldType === "BOOLEAN") return value ? "Sí" : "No";
   if (fieldType === "NUMBER" && typeof value === "number")
     return value.toLocaleString("es-MX", { maximumFractionDigits: 6 });
+  if (fieldType === "RELATION") {
+    const str = String(value);
+    if (str.length > 8) return str.substring(0, 8) + "…";
+    return str;
+  }
   return String(value);
 }
 

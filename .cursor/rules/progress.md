@@ -1,15 +1,15 @@
 # 📈 MetaBuilder - Estado del Desarrollo
 
-> **Última actualización**: 26 de Febrero 2026
+> **Última actualización**: 1 de Marzo 2026
 
 ## Resumen General
 
 | Métrica | Valor |
 |---------|-------|
-| **Fase actual** | Implementación - CRUD Dinámico completo |
-| **Tickets totales** | 59 |
-| **Tickets completados** | 50 |
-| **Progreso general** | 85% |
+| **Fase actual** | Implementación - CRUD Dinámico + Dashboard Builder + Relaciones + Form Builder |
+| **Tickets totales** | 87 |
+| **Tickets completados** | 78 |
+| **Progreso general** | ~90% |
 | **Horas estimadas** | ~30h |
 
 ## Estado por Épica
@@ -125,6 +125,58 @@
 
 ---
 
+### ÉPICA 08: Dashboard Builder
+**Estado**: 🟢 Completada | **Tickets**: 12 | **Progreso**: 12/12
+
+| Ticket | Descripción | Estado | Notas |
+|--------|-------------|--------|-------|
+| TK-DB-001 | Crear modelos ORM para dashboards y widgets | 🟢 Completado | DashboardModel + DashboardWidgetModel |
+| TK-DB-002 | Crear migración Alembic para dashboards | 🟢 Completado | tablas dashboards y dashboard_widgets |
+| TK-DB-003 | Crear DTOs Pydantic para dashboards | 🟢 Completado | |
+| TK-DB-004 | Crear DashboardRepository | 🟢 Completado | CRUD completo |
+| TK-DB-005 | Crear DashboardService | 🟢 Completado | |
+| TK-DB-006 | Crear WidgetDataService con agregaciones | 🟢 Completado | COUNT, SUM, AVG, GROUP BY |
+| TK-DB-007 | Extender DynamicDataRepository | 🟢 Completado | aggregate, group_by, get_recent |
+| TK-DB-008 | Crear Dashboard Router con endpoints | 🟢 Completado | 10 endpoints |
+| TK-DB-009 | Crear componentes de widgets frontend | 🟢 Completado | 7 tipos + WidgetRenderer |
+| TK-DB-010 | Crear páginas DashboardList y DashboardView | 🟢 Completado | |
+| TK-DB-011 | Crear Dashboard Designer con drag & drop | 🟢 Completado | react-grid-layout |
+| TK-DB-012 | Crear documentación UI/UX del Dashboard | 🟢 Completado | User stories, wireframes, mockups |
+
+---
+
+### ÉPICA 09: Relaciones entre Entidades
+**Estado**: 🟢 Completada | **Tickets**: 6 | **Progreso**: 6/6
+
+| Ticket | Descripción | Estado | Notas |
+|--------|-------------|--------|-------|
+| TK-REL-001 | Modelo EntityRelationshipModel | 🟢 Completado | |
+| TK-REL-002 | Migración Alembic entity_relationships | 🟢 Completado | |
+| TK-REL-003 | Campo RELATION en MetadataService | 🟢 Completado | |
+| TK-REL-004 | Endpoint lookup con búsqueda | 🟢 Completado | |
+| TK-REL-005 | RelationLookup component + DynamicForm | 🟢 Completado | |
+| TK-REL-006 | FieldManager con tipo RELATION | 🟢 Completado | |
+
+---
+
+### ÉPICA 10: Form Builder
+**Estado**: 🟢 Completada | **Tickets**: 10 | **Progreso**: 10/10
+
+| Ticket | Descripción | Estado | Notas |
+|--------|-------------|--------|-------|
+| TK-FB-001 | Modelos ORM (forms, sections, fields) | 🟢 Completado | 3 tablas |
+| TK-FB-002 | Migración Alembic forms | 🟢 Completado | |
+| TK-FB-003 | DTOs Pydantic forms | 🟢 Completado | |
+| TK-FB-004 | FormRepository | 🟢 Completado | |
+| TK-FB-005 | FormService (CRUD) | 🟢 Completado | |
+| TK-FB-006 | FormSubmissionService | 🟢 Completado | Multi-entidad transaccional |
+| TK-FB-007 | Forms Router (7 endpoints) | 🟢 Completado | |
+| TK-FB-008 | Section components (4 tipos) | 🟢 Completado | FIELDS, LOOKUP, DETAIL_TABLE, CALCULATED |
+| TK-FB-009 | Form Designer + Renderer | 🟢 Completado | |
+| TK-FB-010 | Páginas y navegación forms | 🟢 Completado | |
+
+---
+
 ## Historial de Progreso
 
 | Fecha | Tickets Completados | Descripción |
@@ -132,14 +184,18 @@
 | 24/01/2026 | 0 | Inicio del proyecto - Documentación completa |
 | 26/02/2026 | 30+ | Vertical slice completo: Setup, Auth, Metadatos backend+frontend, 35 tests |
 | 26/02/2026 | 50 | CRUD Dinámico completo: Backend (DTOs, Repository, Validator, Service, Router) + Frontend (Service, Hooks, DynamicList, DynamicForm, EntityRecords, navegación), 74 tests |
+| 01/03/2026 | 62 | Dashboard Builder completo: Backend (modelos, migración, DTOs, DashboardRepository, DashboardService, WidgetDataService, DynamicDataRepository extendido, 10 endpoints) + Frontend (7 widgets, WidgetRenderer, DashboardList, DashboardView, DashboardDesigner con react-grid-layout), documentación UI/UX |
+| 01/03/2026 | 68 | Relaciones entre Entidades (EP-09): entity_relationships, campo RELATION, endpoint lookup, RelationLookup, FieldManager con RELATION |
+| 01/03/2026 | - | Documentación EP-10 Form Builder: README, US-060 a US-069, forms-user-flows.md, forms-wireframes.md |
+| 01/03/2026 | 78 | Form Builder completo (EP-10): modelos forms/form_sections/form_section_fields, migración, DTOs, FormRepository, FormService, FormSubmissionService transaccional, Forms Router (7 endpoints), section components (FIELDS, LOOKUP, DETAIL_TABLE, CALCULATED), Form Designer + Renderer, páginas y navegación |
 
 ---
 
 ## Próximos Pasos Recomendados
 
-1. **Siguiente ticket**: TK-INFRA-004 (Configurar deploy en Railway)
+1. **Siguiente ticket**: TK-INFRA-004 (Configurar deploy en Railway) o TK-DBA-005 (Seeds)
 2. **Épica activa**: ÉPICA 07 - Deploy y Documentación
-3. **Prioridad**: Completar deploy, seeds, y pruebas en producción
+3. **Prioridad**: Los 3 bloques principales están completos (Dashboard Builder, Relaciones, Form Builder). Listo para integración/deploy.
 
 ---
 

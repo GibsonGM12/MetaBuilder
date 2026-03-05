@@ -1,6 +1,6 @@
 # 📐 MetaBuilder - Patrones y Convenciones
 
-> **Última actualización**: 26 de Febrero 2026
+> **Última actualización**: 1 de Marzo 2026
 
 ## Convenciones de Nomenclatura
 
@@ -207,6 +207,112 @@ export function useCreateRecord(entityId: string) {
     },
   });
 }
+```
+
+---
+
+### Section Renderer Pattern (Frontend - Form Builder)
+
+Switch por `section_type` para renderizar el componente correcto (similar a Widget Renderer):
+
+```tsx
+// Form Renderer - switch por section_type
+switch (section.section_type) {
+  case "FIELDS":
+    return <FieldsSection section={section} ... />;
+  case "LOOKUP":
+    return <LookupSection section={section} ... />;
+  case "DETAIL_TABLE":
+    return <DetailTableSection section={section} ... />;
+  case "CALCULATED":
+    return <CalculatedSection section={section} ... />;
+  default:
+    return null;
+}
+```
+
+---
+
+### Multi-entity Submission Pattern (Backend)
+
+Para formularios que crean registros en múltiples tablas (cabecera + detalle):
+
+```python
+# FormSubmissionService - una sola transacción
+async def submit_form(self, form_id: UUID, payload: dict) -> dict:
+    async with self._session.begin():  # Transacción única
+        header_record = await self._create_header_record(...)
+        for line in payload.get("lines", []):
+            await self._create_detail_record(header_record["id"], line)
+        # Commit implícito al salir del bloque; rollback si hay excepción
+    return result
+```
+
+---
+
+### Widget Renderer Pattern (Frontend)
+
+Switch por `widget_type` para renderizar el componente correcto:
+
+```tsx
+// src/components/dashboard/widgets/WidgetRenderer.tsx
+export function WidgetRenderer({ widget, entityId }: Props) {
+  switch (widget.widget_type) {
+    case "kpi":
+      return <KpiCard widget={widget} entityId={entityId} />;
+    case "stat":
+      return <StatCard widget={widget} entityId={entityId} />;
+    case "bar_chart":
+      return <BarChartWidget widget={widget} entityId={entityId} />;
+    case "line_chart":
+      return <LineChartWidget widget={widget} entityId={entityId} />;
+    case "pie_chart":
+      return <PieChartWidget widget={widget} entityId={entityId} />;
+    case "data_grid":
+      return <DataGridWidget widget={widget} entityId={entityId} />;
+    case "recent_list":
+      return <RecentListWidget widget={widget} entityId={entityId} />;
+    default:
+      return <WidgetError message={`Tipo desconocido: ${widget.widget_type}`} />;
+  }
+}
+```
+
+---
+
+### RELATION Field Pattern
+
+Al agregar un campo de tipo `RELATION`:
+1. El sistema crea una entrada en `entity_relationships` (source_entity_id, target_entity_id, source_field_id, relationship_type, target_display_field)
+2. Se agrega una columna UUID en la tabla dinámica correspondiente (nombre basado en el campo)
+
+### Lookup Pattern
+
+Para campos RELATION, el frontend usa un autocomplete dropdown que consume:
+- **Endpoint**: `GET /api/metadata/entities/{id}/lookup?search={term}`
+- Devuelve registros de la entidad destino filtrados por el término de búsqueda
+- Se usa `target_display_field` para mostrar el valor legible en el dropdown
+
+---
+
+### Widget Data Service Pattern (Backend)
+
+Match por `widget_type` para generar queries de agregación:
+
+```python
+# app/application/services/widget_data_service.py
+async def get_widget_data(self, widget: DashboardWidgetModel, entity: EntityModel) -> list | dict:
+    match widget.widget_type:
+        case "kpi" | "stat":
+            return await self._get_aggregate(entity, widget.config)
+        case "bar_chart" | "line_chart" | "pie_chart":
+            return await self._get_grouped(entity, widget.config)
+        case "data_grid":
+            return await self._get_paginated(entity, widget.config)
+        case "recent_list":
+            return await self._get_recent(entity, widget.config)
+        case _:
+            return []
 ```
 
 ---

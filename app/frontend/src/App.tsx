@@ -3,9 +3,17 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
+import { DashboardDesignerList } from "./pages/DashboardDesignerList";
+import { DashboardDesignerPage } from "./pages/DashboardDesignerPage";
+import { DashboardList } from "./pages/DashboardList";
+import { DashboardView } from "./pages/DashboardView";
 import { EntityDetail } from "./pages/EntityDetail";
 import { EntityManagement } from "./pages/EntityManagement";
 import { EntityRecords } from "./pages/EntityRecords";
+import { FormDesignerList } from "./pages/FormDesignerList";
+import { FormDesignerPage } from "./pages/FormDesignerPage";
+import { FormFill } from "./pages/FormFill";
+import { FormList } from "./pages/FormList";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 
@@ -39,6 +47,86 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboards"
+        element={
+          <ProtectedRoute>
+            <DashboardList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboards/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboards"
+        element={
+          <ProtectedRoute>
+            <DashboardDesignerList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboards/new"
+        element={
+          <ProtectedRoute>
+            <DashboardDesignerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboards/:id/edit"
+        element={
+          <ProtectedRoute>
+            <DashboardDesignerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/forms"
+        element={
+          <ProtectedRoute>
+            <FormList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/forms/:id"
+        element={
+          <ProtectedRoute>
+            <FormFill />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/forms"
+        element={
+          <ProtectedRoute>
+            <FormDesignerList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/forms/new"
+        element={
+          <ProtectedRoute>
+            <FormDesignerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/forms/:id/edit"
+        element={
+          <ProtectedRoute>
+            <FormDesignerPage />
           </ProtectedRoute>
         }
       />

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
-import type { DynamicRecord, EntityField, FieldType } from "../../types";
+import type { DynamicRecord, EntityField, EntityRelationship, FieldType } from "../../types";
 import { Button } from "../common/Button";
+import { RelationLookup } from "./RelationLookup";
 
 interface DynamicFormProps {
   fields: EntityField[];
@@ -8,6 +9,7 @@ interface DynamicFormProps {
   onSubmit: (data: Record<string, unknown>) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  relationships?: EntityRelationship[];
 }
 
 function getInputType(fieldType: FieldType): string {
@@ -47,6 +49,7 @@ export function DynamicForm({
   onSubmit,
   onCancel,
   isLoading = false,
+  relationships = [],
 }: DynamicFormProps) {
   const sortedFields = [...fields].sort(
     (a, b) => a.display_order - b.display_order,
@@ -149,7 +152,26 @@ export function DynamicForm({
             )}
           </label>
 
-          {field.field_type === "BOOLEAN" ? (
+          {field.field_type === "RELATION" ? (() => {
+            const rel = relationships.find((r) => r.source_field_id === field.id);
+            return rel ? (
+              <RelationLookup
+                entityId={rel.target_entity_id}
+                value={formData[field.name] ?? ""}
+                onChange={(val) => handleChange(field.name, val)}
+                displayValue={initialData?.data?.[field.name] ? String(initialData.data[field.name]) : ""}
+              />
+            ) : (
+              <input
+                id={`field-${field.name}`}
+                type="text"
+                value={formData[field.name] ?? ""}
+                onChange={(e) => handleChange(field.name, e.target.value)}
+                placeholder="UUID de referencia"
+                className="block w-full rounded-md shadow-sm sm:text-sm border px-3 py-2 border-gray-300 focus:border-primary-500 focus:ring-primary-500"
+              />
+            );
+          })() : field.field_type === "BOOLEAN" ? (
             <label className="inline-flex items-center cursor-pointer">
               <input
                 id={`field-${field.name}`}
