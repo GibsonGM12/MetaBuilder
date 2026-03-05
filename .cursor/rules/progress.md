@@ -1,15 +1,15 @@
 # 📈 MetaBuilder - Estado del Desarrollo
 
-> **Última actualización**: 26 de Febrero 2026
+> **Última actualización**: 5 de Marzo 2026
 
 ## Resumen General
 
 | Métrica | Valor |
 |---------|-------|
-| **Fase actual** | Implementación - CRUD Dinámico completo |
+| **Fase actual** | Implementación - CI/CD Pipeline configurado |
 | **Tickets totales** | 59 |
-| **Tickets completados** | 50 |
-| **Progreso general** | 85% |
+| **Tickets completados** | 51 |
+| **Progreso general** | 86% |
 | **Horas estimadas** | ~30h |
 
 ## Estado por Épica
@@ -111,12 +111,12 @@
 ---
 
 ### ÉPICA 07: Deploy y Documentación
-**Estado**: 🟡 En Progreso | **Tickets**: 7 | **Progreso**: 2/7
+**Estado**: 🟡 En Progreso | **Tickets**: 7 | **Progreso**: 3/7
 
 | Ticket | Descripción | Estado | Notas |
 |--------|-------------|--------|-------|
 | TK-INFRA-003 | Crear Dockerfile backend | 🟢 Completado | |
-| TK-INFRA-004 | Configurar deploy en Railway | 🔴 Pendiente | |
+| TK-INFRA-004 | Configurar CI/CD con GitHub Actions | 🟢 Completado | Pipeline: build en GH runners + deploy en self-hosted VMTest |
 | TK-DBA-005 | Crear script de seeds | 🔴 Pendiente | |
 | TK-QA-001 | Pruebas de humo de API | 🟢 Completado | |
 | TK-DBA-006 | Ejecutar migraciones en producción | 🔴 Pendiente | |
@@ -132,14 +132,15 @@
 | 24/01/2026 | 0 | Inicio del proyecto - Documentación completa |
 | 26/02/2026 | 30+ | Vertical slice completo: Setup, Auth, Metadatos backend+frontend, 35 tests |
 | 26/02/2026 | 50 | CRUD Dinámico completo: Backend (DTOs, Repository, Validator, Service, Router) + Frontend (Service, Hooks, DynamicList, DynamicForm, EntityRecords, navegación), 74 tests |
+| 05/03/2026 | 51 | CI/CD Pipeline: GitHub Actions con build en runners de GitHub y deploy en self-hosted VMTest |
 
 ---
 
 ## Próximos Pasos Recomendados
 
-1. **Siguiente ticket**: TK-INFRA-004 (Configurar deploy en Railway)
+1. **Siguiente ticket**: TK-DBA-005 (Crear script de seeds)
 2. **Épica activa**: ÉPICA 07 - Deploy y Documentación
-3. **Prioridad**: Completar deploy, seeds, y pruebas en producción
+3. **Prioridad**: Seeds, migraciones en producción, y pruebas
 
 ---
 
