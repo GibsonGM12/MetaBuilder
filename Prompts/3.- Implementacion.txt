@@ -1,0 +1,220 @@
+Actúa como un **Senior Full-Stack Engineer** trabajando dentro de **Cursor**. Quiero que **empieces a desarrollar** el proyecto (no solo planearlo) basándote **estrictamente** en @funcionalidad_core.md 
+
+Stack:
+Revisa el Stack propuesto en el proyecto
+
+## REGLAS
+- Lee `funcionalidad_core.md` y NO inventes features fuera de ahí.
+- Si falta info, implementa lo mínimo y marca TODOs con prefijo: `TODO(SUPUESTO): ...`
+- Entrega código ejecutable en cada paso.
+- Después de cada bloque de cambios: lista comandos para correrlo y cómo validar.
+- Todo debe quedar dentro de una carpeta raíz llamada: `app/`
+- Nada debe quedar fuera de `app/`
+
+---
+
+# 📁 ESTRUCTURA OBLIGATORIA
+
+Todo el proyecto debe vivir dentro de:
+
+/app
+  /backend
+  /frontend
+  /docs
+  docker-compose.yml
+  .env.example
+  README.md
+
+- `backend` y `frontend` deben estar dentro de `app/`
+- La base de datos, backend y frontend deben levantarse con **un solo comando** desde `app/`:
+  - `docker compose up --build`
+
+---
+
+# 🎯 OBJETIVO DE ESTA SESIÓN
+
+1) Crear el esqueleto funcional completo dentro de `app/`
+2) Dejar backend + frontend + base de datos completamente contenerizados
+3) Implementar el **primer vertical slice** del core (UI → API → DB)
+4) Dejar listo para levantar todo con:
+   - `cd app && docker compose up --build`
+
+---
+
+# 🧱 TAREAS (ORDEN OBLIGATORIO)
+
+## 1) Inicialización de estructura
+Crear:
+- `app/backend`
+- `app/frontend`
+- `app/docs`
+- `app/docker-compose.yml`
+- `app/.env.example`
+- `app/README.md`
+
+README debe incluir:
+- Requisitos
+- Cómo levantar entorno
+- Variables de entorno
+- Comandos útiles
+
+## 2) Dockerización completa (OBLIGATORIO)
+
+### DB
+- Usar **PostgreSQL**
+- Persistencia con volumen
+- Variables desde `.env` / `.env.example`
+
+### Backend
+- `Dockerfile` basado en `python:3.12-slim`
+- Instalar dependencias
+- Ejecutar con `uvicorn`
+- Esperar DB antes de iniciar (healthcheck o script)
+
+### Frontend
+- `Dockerfile` multistage:
+  - build con Node
+  - servir con Nginx (preferido) o alternativa justificada
+- Configurar `VITE_API_URL` para entorno Docker (apuntando al backend)
+
+### docker-compose.yml
+Debe levantar:
+- `db`
+- `backend`
+- `frontend`
+
+Con:
+- network interna
+- depends_on + healthchecks
+- variables de entorno
+- puertos:
+  - backend: 8000
+  - frontend: 5173 (si dev) o 80 (si nginx)
+
+---
+
+## 3) Backend (FastAPI)
+
+Estructura obligatoria:
+backend/app/
+  main.py
+  core/
+    config.py
+    database.py
+  api/
+  models/
+  schemas/
+  services/
+  repositories/
+
+Requisitos mínimos iniciales:
+- `GET /health`
+- `GET /api/v1/version`
+- CORS habilitado para:
+  - `http://localhost:5173` (dev local)
+  - el origen del contenedor del frontend (si aplica)
+- Config con `pydantic-settings`
+- Manejo estándar de errores:
+  - respuesta estándar:
+    `{ "error": { "code": "...", "message": "...", "details": ... } }`
+- Persistencia:
+  - Preferir **SQLAlchemy 2.0 + asyncpg** para Postgres
+  - Si el md no requiere DB aún: empezar con repo in-memory pero dejando interfaz lista para migrar
+
+---
+
+## 4) Frontend
+
+- Vite + React + TS
+- Tailwind configurado
+- React Router
+- Axios client centralizado:
+  - baseURL desde `VITE_API_URL`
+  - interceptors para errores
+- Páginas:
+  - Home
+  - Página mínima que consuma el primer endpoint core del md
+- Estado:
+  - Si hay lecturas/escrituras: usar **React Query**
+  - Si no es claro: usar hooks y marcar SUPUESTO
+
+---
+
+## 5) Primer Vertical Slice (según funcionalidad_core.md)
+
+1) Identifica el flujo core más simple y de mayor valor del md.
+2) Implementa end-to-end:
+
+Backend:
+- schemas + service + repository + endpoint(s)
+- validaciones con Pydantic
+- errores bien definidos
+
+Frontend:
+- página funcional del flujo
+- formulario/listado mínimo
+- estados: loading / error / empty / success
+
+Debe funcionar en Docker.
+
+---
+
+## 6) Calidad mínima
+
+Backend:
+- `ruff` (lint + format)
+- `pytest` (test de `/health` + test del endpoint core)
+
+Frontend:
+- `eslint` + `prettier`
+- `vitest` + testing-library (1 test mínimo)
+
+---
+
+# 📦 FORMATO DE RESPUESTA (OBLIGATORIO)
+
+Trabaja como si estuvieras creando/actualizando archivos reales.
+
+Agrupa en commits:
+
+### Commit 1: Setup base + Docker
+### Commit 2: Backend base
+### Commit 3: Frontend base
+### Commit 4: Primer vertical slice (core)
+
+Para cada archivo incluye:
+- Ruta desde `/app`
+- Contenido completo (en bloque de código)
+
+Al final de cada commit incluye:
+- comandos para correr
+- checklist de verificación
+
+---
+
+# 🚀 COMIENZA AHORA
+
+1) Abre/lee `funcionalidad_core.md` y resume el primer flujo core que vas a implementar.
+2) Luego crea el **Commit 1** con:
+   - estructura completa dentro de `app/`
+   - `docker-compose.yml`
+   - Dockerfiles (backend + frontend)
+   - `README.md`
+   - `.env.example`
+
+NOTA: Antes de iniciar todo esto, indaga de que trata el proyecto para que tengas un mejor contexto
+
+
+
+
+
+
+Prompt 2
+Ya quedo el tema 1 (Gestion de metadatos) ,  Ahora implementa el resto:
+2 CRUD Generico de datos
+3 Autenticación y Autorización Básica
+4 Frontend NOTA: Hay pantallas que ya creaste, pero faltaron algunas otras, analiza que es lo que falto y colocalo en el plan
+
+
+Promp 3
+Genera seeds para iniciar con entidades y registros de prueba

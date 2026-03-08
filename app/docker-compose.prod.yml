@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:15
+    container_name: metabuilder-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-metabuilder}
+      POSTGRES_USER: ${POSTGRES_USER:-metabuilder}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-metabuilder}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - metabuilder-network
+    restart: unless-stopped
+
+  backend:
+    image: metabuilder-backend:latest
+    container_name: metabuilder-backend
+    command: >
+      sh -c "echo 'Waiting for PostgreSQL...' &&
+             while ! nc -z db 5432; do sleep 1; done &&
+             echo 'PostgreSQL is ready!' &&
+             alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-metabuilder}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metabuilder}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-metabuilder}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metabuilder}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-30}
+      DEBUG: ${DEBUG:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - metabuilder-network
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+
+networks:
+  metabuilder-network:
+    driver: bridge

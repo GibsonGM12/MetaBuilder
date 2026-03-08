@@ -1,0 +1,122 @@
+name: MetaBuilder CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: app/frontend
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Build frontend
+        working-directory: app/frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm run build
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: app/frontend/dist/
+          retention-days: 3
+
+  build-backend:
+    name: Build Backend Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        working-directory: app/backend
+        run: docker build -t metabuilder-backend:latest .
+
+      - name: Save Docker image
+        run: docker save metabuilder-backend:latest | gzip > metabuilder-backend.tar.gz
+
+      - name: Upload backend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: metabuilder-backend.tar.gz
+          retention-days: 3
+
+  deploy:
+    name: Deploy to VMTest
+    runs-on: [self-hosted, VMTest]
+    needs: [build-frontend, build-backend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Deploy frontend to Nginx
+        run: |
+          rm -rf /var/www/html/metabuilder/*
+          cp -r frontend-dist/* /var/www/html/metabuilder/
+
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load -i metabuilder-backend.tar.gz
+
+      - name: Setup deployment directory
+        run: |
+          mkdir -p /opt/metabuilder
+          cp app/docker-compose.prod.yml /opt/metabuilder/docker-compose.yml
+
+      - name: Create environment file
+        run: |
+          cat > /opt/metabuilder/.env.prod << EOF
+          POSTGRES_DB=metabuilder
+          POSTGRES_USER=metabuilder
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+          JWT_ALGORITHM=HS256
+          JWT_EXPIRE_MINUTES=30
+          DEBUG=false
+          EOF
+
+      - name: Deploy backend with Docker Compose
+        working-directory: /opt/metabuilder
+        run: |
+          docker compose --env-file .env.prod down --timeout 30
+          docker compose --env-file .env.prod up -d
+          docker compose --env-file .env.prod ps
+
+      - name: Cleanup old Docker images
+        run: docker image prune -f
