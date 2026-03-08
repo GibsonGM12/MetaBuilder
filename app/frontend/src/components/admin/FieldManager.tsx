@@ -2,8 +2,8 @@ import { useState, type FormEvent } from "react";
 import { Button } from "../common/Button";
 import { Input } from "../common/Input";
 import { Modal } from "../common/Modal";
-import { useAddField, useDeleteField } from "../../hooks/useMetadata";
-import type { EntityField, FieldType } from "../../types";
+import { useAddField, useDeleteField, useEntities, useEntity } from "../../hooks/useMetadata";
+import type { Entity, EntityField, FieldType } from "../../types";
 
 const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: "TEXT", label: "Texto" },
@@ -11,6 +11,7 @@ const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: "INTEGER", label: "Entero" },
   { value: "DATE", label: "Fecha" },
   { value: "BOOLEAN", label: "Booleano" },
+  { value: "RELATION", label: "Relación (Lookup)" },
 ];
 
 interface FieldManagerProps {
@@ -25,10 +26,17 @@ export function FieldManager({ entityId, fields }: FieldManagerProps) {
   const [fieldType, setFieldType] = useState<FieldType>("TEXT");
   const [isRequired, setIsRequired] = useState(false);
   const [maxLength, setMaxLength] = useState("");
+  const [targetEntityId, setTargetEntityId] = useState("");
+  const [targetDisplayField, setTargetDisplayField] = useState("");
   const [error, setError] = useState("");
 
   const addField = useAddField(entityId);
   const deleteField = useDeleteField(entityId);
+  const { data: allEntities = [] } = useEntities();
+  const { data: targetEntity } = useEntity(targetEntityId || undefined);
+
+  const otherEntities = allEntities.filter((e: Entity) => e.id !== entityId);
+  const targetTextFields = targetEntity?.fields?.filter((f: EntityField) => f.field_type === "TEXT") ?? [];
 
   const resetForm = () => {
     setFieldName("");
@@ -36,6 +44,8 @@ export function FieldManager({ entityId, fields }: FieldManagerProps) {
     setFieldType("TEXT");
     setIsRequired(false);
     setMaxLength("");
+    setTargetEntityId("");
+    setTargetDisplayField("");
     setError("");
   };
 
@@ -49,6 +59,8 @@ export function FieldManager({ entityId, fields }: FieldManagerProps) {
         field_type: fieldType,
         is_required: isRequired,
         max_length: maxLength ? parseInt(maxLength) : undefined,
+        target_entity_id: fieldType === "RELATION" ? targetEntityId : undefined,
+        target_display_field: fieldType === "RELATION" ? targetDisplayField : undefined,
       });
       resetForm();
       setShowAdd(false);
@@ -166,6 +178,43 @@ export function FieldManager({ entityId, fields }: FieldManagerProps) {
               onChange={(e) => setMaxLength(e.target.value)}
               placeholder="255"
             />
+          )}
+          {fieldType === "RELATION" && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Entidad destino</label>
+                <select
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border px-3 py-2"
+                  value={targetEntityId}
+                  onChange={(e) => {
+                    setTargetEntityId(e.target.value);
+                    setTargetDisplayField("");
+                  }}
+                  required
+                >
+                  <option value="">-- Seleccionar --</option>
+                  {otherEntities.map((e: Entity) => (
+                    <option key={e.id} value={e.id}>{e.display_name}</option>
+                  ))}
+                </select>
+              </div>
+              {targetEntityId && targetTextFields.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Campo a mostrar</label>
+                  <select
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border px-3 py-2"
+                    value={targetDisplayField}
+                    onChange={(e) => setTargetDisplayField(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Seleccionar --</option>
+                    {targetTextFields.map((f: EntityField) => (
+                      <option key={f.id} value={f.name}>{f.display_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )}
           <div className="flex items-center">
             <input

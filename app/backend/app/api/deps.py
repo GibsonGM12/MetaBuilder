@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.infrastructure.database.repositories.dynamic_data_repository import DynamicDataRepository
 from app.infrastructure.database.repositories.metadata_repository import MetadataRepository
+from app.infrastructure.database.repositories.relationship_repository import RelationshipRepository
 from app.infrastructure.database.table_manager import TableManager
 
 security = HTTPBearer(auto_error=False)
@@ -20,7 +21,8 @@ security = HTTPBearer(auto_error=False)
 async def get_metadata_service(db: AsyncSession = Depends(get_db)) -> MetadataService:
     repo = MetadataRepository(db)
     tm = TableManager(db)
-    return MetadataService(repo, tm)
+    rel_repo = RelationshipRepository(db)
+    return MetadataService(repo, tm, rel_repo)
 
 
 async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:

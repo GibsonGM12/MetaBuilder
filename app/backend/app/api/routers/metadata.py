@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_admin
+from app.api.deps import get_current_user, require_admin
 from app.application.dto.metadata_dto import (
     EntityCreate,
     EntityListResponse,
@@ -11,17 +11,20 @@ from app.application.dto.metadata_dto import (
     EntityUpdate,
     FieldCreate,
     FieldResponse,
+    LookupItem,
+    RelationshipResponse,
 )
 from app.application.services.metadata_service import MetadataService
 from app.core.database import get_db
 from app.infrastructure.database.repositories.metadata_repository import MetadataRepository
+from app.infrastructure.database.repositories.relationship_repository import RelationshipRepository
 from app.infrastructure.database.table_manager import TableManager
 
 router = APIRouter(prefix="/api/metadata", tags=["metadata"])
 
 
 async def _get_service(db: AsyncSession = Depends(get_db)) -> MetadataService:
-    return MetadataService(MetadataRepository(db), TableManager(db))
+    return MetadataService(MetadataRepository(db), TableManager(db), RelationshipRepository(db))
 
 
 @router.get("/entities", response_model=list[EntityListResponse])
@@ -87,3 +90,23 @@ async def delete_field(
     _admin: dict = Depends(require_admin),
 ):
     await service.delete_field(entity_id, field_id)
+
+
+@router.get("/entities/{entity_id}/relationships", response_model=list[RelationshipResponse])
+async def get_entity_relationships(
+    entity_id: UUID,
+    service: MetadataService = Depends(_get_service),
+    _admin: dict = Depends(require_admin),
+):
+    return await service.get_entity_relationships(entity_id)
+
+
+@router.get("/entities/{entity_id}/lookup", response_model=list[LookupItem])
+async def lookup_entity_records(
+    entity_id: UUID,
+    search: str = "",
+    limit: int = 20,
+    service: MetadataService = Depends(_get_service),
+    _user: dict = Depends(get_current_user),
+):
+    return await service.lookup_entity_records(entity_id, search, limit)

@@ -18,9 +18,11 @@ class EntityUpdate(BaseModel):
 class FieldCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     display_name: str = Field(..., min_length=1, max_length=200)
-    field_type: str = Field(..., pattern="^(TEXT|NUMBER|INTEGER|DATE|BOOLEAN)$")
+    field_type: str = Field(..., pattern="^(TEXT|NUMBER|INTEGER|DATE|BOOLEAN|RELATION)$")
     is_required: bool = False
     max_length: int | None = Field(None, ge=1, le=10000)
+    target_entity_id: UUID | None = None
+    target_display_field: str | None = None
 
 
 class FieldResponse(BaseModel):
@@ -59,3 +61,20 @@ class EntityListResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class RelationshipResponse(BaseModel):
+    id: UUID
+    source_entity_id: UUID
+    target_entity_id: UUID
+    relationship_type: str
+    source_field_id: UUID
+    target_display_field: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class LookupItem(BaseModel):
+    id: UUID
+    display_value: str

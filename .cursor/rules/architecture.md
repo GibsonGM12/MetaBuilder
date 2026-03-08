@@ -1,6 +1,6 @@
 # 🏗️ MetaBuilder - Arquitectura y Decisiones
 
-> **Última actualización**: 26 de Febrero 2026
+> **Última actualización**: 1 de Marzo 2026
 
 ## Arquitectura General
 
@@ -161,6 +161,65 @@ result = await session.execute(sql, {"id": record_id})
 - ✅ Elimina capa de abstracción innecesaria
 - ✅ Resuelve incompatibilidad entre passlib y bcrypt
 - ✅ API simple: `bcrypt.hashpw()` y `bcrypt.checkpw()`
+
+---
+
+### ADR-008: Dashboard como Metadatos
+
+**Decisión**: Los dashboards se almacenan como **metadatos** (configuración JSON para widgets) en lugar de vistas hard-coded
+
+**Contexto**:
+- Alternativa: Vistas de dashboard fijas en código, con widgets predefinidos
+
+**Razones**:
+- ✅ Extensible: nuevos tipos de widget sin cambios de código
+- ✅ Consistente con la filosofía metadata-driven de MetaBuilder
+- ✅ Los usuarios pueden crear y personalizar dashboards sin deploy
+- ✅ Configuración (position, config) en JSON permite flexibilidad total
+
+**Consecuencias**:
+- WidgetDataService hace match por `widget_type` para generar queries de agregación
+- WidgetRenderer hace switch por `widget_type` para renderizar el componente correcto
+- layout_config y position almacenan la configuración de react-grid-layout
+
+---
+
+### ADR-009: Relaciones Lógicas (Logical FK)
+
+**Decisión**: Usar **relaciones lógicas basadas en metadatos** (tabla `entity_relationships`) en lugar de constraints FK reales de PostgreSQL en las tablas dinámicas
+
+**Contexto**:
+- Las tablas dinámicas se crean en runtime según metadatos
+- Las FKs reales requerirían gestionar nombres de constraints y orden de creación
+
+**Razones**:
+- ✅ Flexibilidad: las tablas dinámicas se crean sin dependencias de orden
+- ✅ Las relaciones se definen en metadatos (`entity_relationships`)
+- ✅ La validación ocurre en la capa de aplicación (MetadataService, DataValidator)
+- ✅ Se almacena UUID en columna de la tabla dinámica; la integridad referencial se valida en aplicación
+
+**Consecuencias**:
+- No hay CASCADE automático a nivel DB; la eliminación de registros referenciados debe manejarse en lógica de negocio
+- El endpoint lookup permite búsqueda por término para autocomplete en campos RELATION
+
+---
+
+### ADR-010: Multi-entity Transactional Form Submission
+
+**Decisión**: FormSubmissionService maneja todas las escrituras dentro de una **única transacción de base de datos**
+
+**Contexto**:
+- Los formularios pueden tener secciones que crean registros en múltiples entidades (cabecera + líneas de detalle)
+- Si falla la creación de una línea, no debe quedar el registro de cabecera huérfano
+
+**Razones**:
+- ✅ Integridad de datos: registros relacionados (header + detail) se crean atómicamente
+- ✅ Rollback automático ante cualquier fallo
+- ✅ Consistencia transaccional garantizada
+
+**Consecuencias**:
+- FormSubmissionService usa una sola sesión/transacción para todos los INSERT
+- Si cualquier operación falla, se hace rollback de todo
 
 ---
 

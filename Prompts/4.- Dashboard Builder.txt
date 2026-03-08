@@ -1,0 +1,16 @@
+Modelo: Opups 4.6
+
+### Prompt 0 ###
+Estoy pensando en agregarle a la funcionalidad core de este proyecto, un dashboard en el cual el usuario final pueda diseñar su propia pantalla, y esta  misma se muestre en algun lugar, y que empiece a almacenar información en general.
+
+La idea en general es que el usuario administrador pueda diseñar pantallas y los usuarios normales puedan trabajar sobre estas pantallas, algo como dashboards, en el cual el usuario pueda arrastrar por ejemplo cards informativas de entidades, charts, grids, etc, y estos mismos puedan consultar información de las entidades, ¿que opinas? refina la idea
+
+
+
+### Prompt 1 ###
+Recuerda que todo esto tiene que seguri los pasos de UI/UX, hagamos un plan de implementacion
+
+
+
+### Prompt 2 ###
+Agreguemos al plan, que tenga tamien a parte de crear dashboards, tambien que haga formularios complejos, como por ejemplo, la captura de una venta, y que esta venta lleve productos y clientes, este tipo de cosas, ¿lo ves viable?

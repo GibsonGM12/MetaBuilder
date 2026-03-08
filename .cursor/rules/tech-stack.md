@@ -1,6 +1,6 @@
 # 🛠️ MetaBuilder - Stack Tecnológico
 
-> **Última actualización**: 26 de Febrero 2026
+> **Última actualización**: 1 de Marzo 2026
 
 ## Backend
 
@@ -83,6 +83,11 @@ backend/
 | Axios | ^1.7.9 | Cliente HTTP |
 | React Router | ^6.28.0 | Routing SPA |
 | TanStack React Query | ^5.62.0 | Data fetching y cache |
+| react-grid-layout | - | Dashboard layout con drag & drop; reutilizado en Form Builder |
+| recharts | - | Gráficos (bar, pie, line) para widgets |
+| lucide-react | - | Iconos para la UI; reutilizado en Form Builder |
+
+**Nota**: El Form Builder (EP-10) no introduce nuevas dependencias. Reutiliza react-grid-layout, lucide-react y el componente RelationLookup de fases anteriores.
 
 ### Estructura Frontend Actual
 ```
