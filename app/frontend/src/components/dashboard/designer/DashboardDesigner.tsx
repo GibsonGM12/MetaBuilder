@@ -9,7 +9,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Responsive, WidthProvider } from "react-grid-layout/legacy";
+import { Layout, Responsive, WidthProvider } from "react-grid-layout/legacy";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -134,7 +134,7 @@ export function DashboardDesigner({ dashboardId, onSaved }: DashboardDesignerPro
   );
 
   const handleLayoutChange = useCallback(
-    (layout: { i: string; x: number; y: number; w: number; h: number }[]) => {
+    (layout: Layout) => {
       setLocalWidgets((prev) =>
         prev.map((widget) => {
           const item = layout.find((l) => l.i === widget.id);
