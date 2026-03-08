@@ -1,6 +1,6 @@
 # 📈 MetaBuilder - Estado del Desarrollo
 
-> **Última actualización**: 1 de Marzo 2026
+> **Última actualización**: 5 de Marzo 2026
 
 ## Resumen General
 
@@ -10,6 +10,10 @@
 | **Tickets totales** | 87 |
 | **Tickets completados** | 78 |
 | **Progreso general** | ~90% |
+| **Fase actual** | Implementación - CI/CD Pipeline configurado |
+| **Tickets totales** | 59 |
+| **Tickets completados** | 51 |
+| **Progreso general** | 86% |
 | **Horas estimadas** | ~30h |
 
 ## Estado por Épica
@@ -111,12 +115,12 @@
 ---
 
 ### ÉPICA 07: Deploy y Documentación
-**Estado**: 🟡 En Progreso | **Tickets**: 7 | **Progreso**: 2/7
+**Estado**: 🟡 En Progreso | **Tickets**: 7 | **Progreso**: 3/7
 
 | Ticket | Descripción | Estado | Notas |
 |--------|-------------|--------|-------|
 | TK-INFRA-003 | Crear Dockerfile backend | 🟢 Completado | |
-| TK-INFRA-004 | Configurar deploy en Railway | 🔴 Pendiente | |
+| TK-INFRA-004 | Configurar CI/CD con GitHub Actions | 🟢 Completado | Pipeline: build en GH runners + deploy en self-hosted VMTest |
 | TK-DBA-005 | Crear script de seeds | 🔴 Pendiente | |
 | TK-QA-001 | Pruebas de humo de API | 🟢 Completado | |
 | TK-DBA-006 | Ejecutar migraciones en producción | 🔴 Pendiente | |
@@ -188,6 +192,7 @@
 | 01/03/2026 | 68 | Relaciones entre Entidades (EP-09): entity_relationships, campo RELATION, endpoint lookup, RelationLookup, FieldManager con RELATION |
 | 01/03/2026 | - | Documentación EP-10 Form Builder: README, US-060 a US-069, forms-user-flows.md, forms-wireframes.md |
 | 01/03/2026 | 78 | Form Builder completo (EP-10): modelos forms/form_sections/form_section_fields, migración, DTOs, FormRepository, FormService, FormSubmissionService transaccional, Forms Router (7 endpoints), section components (FIELDS, LOOKUP, DETAIL_TABLE, CALCULATED), Form Designer + Renderer, páginas y navegación |
+| 05/03/2026 | 51 | CI/CD Pipeline: GitHub Actions con build en runners de GitHub y deploy en self-hosted VMTest |
 
 ---
 

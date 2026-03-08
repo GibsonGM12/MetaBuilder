@@ -1,6 +1,6 @@
 # 🎯 MetaBuilder - Contexto Activo
 
-> **Última actualización**: 1 de Marzo 2026
+> **Última actualización**: 5 de Marzo 2026
 
 ## Estado Actual de la Sesión
 
@@ -10,6 +10,8 @@
 |-------|-------|
 | **Épica activa** | Ninguna (todas completadas) |
 | **Ticket actual** | Listo para Deploy / Integración |
+| **Épica activa** | ÉPICA 07 - Deploy y Documentación |
+| **Ticket actual** | TK-DBA-005 - Crear script de seeds |
 | **Archivos modificados** | Ver sección "Archivos Creados/Modificados" |
 | **Bloqueadores** | Ninguno |
 
@@ -52,11 +54,24 @@ Se creó la documentación completa de EP-10 (Form Builder):
 - **forms-user-flows.md**: Flow 1 (Admin diseña), Flow 2 (User llena y envía), diagrama de navegación
 - **forms-wireframes.md**: Form Designer, Section Config, Form Renderer, Lista de formularios
 
+### Sesión Completada - CI/CD Pipeline
+
+Se configuró el pipeline de CI/CD con GitHub Actions:
+
+- **Build en GitHub Runners** (ubuntu-latest): Compilación del frontend (Vite) y build de la imagen Docker del backend en paralelo
+- **Deploy en Self-hosted** (VMTest): Frontend a `/var/www/html/metabuilder`, backend via Docker Compose en `/opt/metabuilder`
+- **Archivos creados**: `.github/workflows/deploy.yml`, `app/docker-compose.prod.yml`, `app/.env.prod.example`
+- **Enfoque**: Docker save/load via artifacts (sin GHCR)
+- **Trigger**: En cada PR hacia `main` que modifique archivos en `app/`
+
 ### Próxima Tarea
 
 **Ticket**: TK-INFRA-004 (Deploy) o TK-DBA-005 (Seeds)
 
 **Descripción**: Proyecto listo para pruebas de integración y deploy. Todos los bloques principales implementados.
+**Ticket**: TK-DBA-005 - Crear script de seeds
+
+**Descripción**: Crear datos iniciales para la base de datos de producción.
 
 ---
 
@@ -64,6 +79,8 @@ Se creó la documentación completa de EP-10 (Form Builder):
 
 ### Decisiones Tomadas
 
+- **CI/CD sin GHCR**: Pipeline usa Docker save/load via GitHub Actions artifacts en vez de Container Registry
+- **Deploy self-hosted**: Build en runners de GitHub, solo deploy en VMTest (self-hosted)
 - **bcrypt directo**: Uso de bcrypt directamente en lugar de passlib para hashing de contraseñas
 - **PostgreSQL async/sync**: asyncpg para operaciones asíncronas en runtime; psycopg2-binary para Alembic (migraciones síncronas)
 - **Error handling**: ErrorHandlerMiddleware reemplazado por exception handlers registrados en la app FastAPI
@@ -198,7 +215,12 @@ Se creó la documentación completa de EP-10 (Form Builder):
 
 ### Infraestructura
 - `app/docker-compose.yml`
+- `app/docker-compose.prod.yml` - Compose de producción (imagen local, sin --reload, sin volumes dev)
 - `app/.env.example`
+- `app/.env.prod.example` - Variables de producción
+
+### CI/CD
+- `.github/workflows/deploy.yml` - Pipeline: build-frontend + build-backend + deploy
 
 ---
 
@@ -275,6 +297,7 @@ npm run dev
 
 - [ ] Leer `progress.md` para ver estado actual
 - [ ] Identificar ticket a trabajar (TK-INFRA-004 Deploy o TK-DBA-005 Seeds)
+- [ ] Identificar ticket a trabajar (TK-DBA-005)
 - [ ] Revisar documentación del ticket en `documentation/7-tickets-trabajo/`
 - [ ] Implementar ticket
 - [ ] Actualizar `progress.md` al completar
