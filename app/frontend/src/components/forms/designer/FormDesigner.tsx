@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, GripVertical, Save, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, GripVertical, Save, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -61,10 +61,11 @@ export function FormDesigner({ formId }: FormDesignerProps) {
   );
 
   const handleAddSection = useCallback((type: SectionType) => {
+    const needsEntity = (["FIELDS", "LOOKUP", "DETAIL_TABLE"] as SectionType[]).includes(type);
     const newSection: LocalSection = {
       id: crypto.randomUUID(),
       section_type: type,
-      entity_id: null,
+      entity_id: needsEntity ? primaryEntityId || null : null,
       title: SECTION_LABELS[type],
       display_order: 0,
       config: {},
@@ -75,7 +76,7 @@ export function FormDesigner({ formId }: FormDesignerProps) {
       return updated.map((s, i) => ({ ...s, display_order: i }));
     });
     setSelectedSectionId(newSection.id);
-  }, []);
+  }, [primaryEntityId]);
 
   const handleUpdateSection = useCallback((updated: LocalSection) => {
     setLocalSections((prev) =>
@@ -140,6 +141,12 @@ export function FormDesigner({ formId }: FormDesignerProps) {
     }
   };
 
+  const handlePreview = () => {
+    if (formId) {
+      window.open(`/forms/${formId}`, "_blank");
+    }
+  };
+
   const handleDiscard = () => {
     navigate("/admin/forms");
   };
@@ -177,6 +184,17 @@ export function FormDesigner({ formId }: FormDesignerProps) {
           <Save className="h-4 w-4" />
           {isSaving ? "Guardando..." : "Guardar"}
         </button>
+
+        {formId && (
+          <button
+            type="button"
+            onClick={handlePreview}
+            className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <Eye className="h-4 w-4" />
+            Vista previa
+          </button>
+        )}
 
         <button
           type="button"

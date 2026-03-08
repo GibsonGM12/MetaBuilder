@@ -65,6 +65,12 @@ export function FormDesignerList() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
+                        to={`/forms/${form.id}`}
+                        className="text-sm font-medium text-gray-600 hover:text-gray-800"
+                      >
+                        Ver
+                      </Link>
+                      <Link
                         to={`/admin/forms/${form.id}/edit`}
                         className="text-sm font-medium text-primary-600 hover:text-primary-700"
                       >

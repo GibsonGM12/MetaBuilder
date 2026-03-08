@@ -80,8 +80,7 @@ export function SectionConfigPanel({
           <select
             value={section.entity_id ?? ""}
             onChange={(e) => {
-              updateField("entity_id", e.target.value || null);
-              updateField("fields", []);
+              onUpdate({ ...section, entity_id: e.target.value || null, fields: [] });
             }}
             className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           >
